@@ -63,6 +63,18 @@ function euro(float $amount): string
 {
     return number_format($amount, 2, ',', '.') . ' €';
 }
+
+function isDueBeforeInvoiceDate(string $dueDate, string $invoiceDate): bool
+{
+    $dueTimestamp = strtotime($dueDate);
+    $invoiceTimestamp = strtotime($invoiceDate);
+
+    if ($dueTimestamp === false || $invoiceTimestamp === false) {
+        return false;
+    }
+
+    return $dueTimestamp < $invoiceTimestamp;
+}
 ?><!DOCTYPE html>
 <html lang="it">
 <head>
@@ -85,6 +97,7 @@ function euro(float $amount): string
         .success { background: #dcfce7; color: #166534; }
         .error { background: #fee2e2; color: #991b1b; }
         .amount { font-weight: 700; }
+        .due-date-anomaly { color: #b91c1c; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -145,8 +158,9 @@ function euro(float $amount): string
             </thead>
             <tbody>
             <?php foreach ($dues as $due): ?>
+                <?php $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; ?>
                 <tr>
-                    <td><?= htmlspecialchars($due->dueDate) ?></td>
+                    <td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td>
                     <td><?= htmlspecialchars($due->clientName) ?></td>
                     <td>
                         <?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?>
@@ -176,8 +190,9 @@ function euro(float $amount): string
                 </thead>
                 <tbody>
                 <?php foreach ($group['items'] as $item): ?>
+                    <?php $dueDateClass = isDueBeforeInvoiceDate($item->dueDate, $item->invoiceDate) ? 'due-date-anomaly' : ''; ?>
                     <tr>
-                        <td><?= htmlspecialchars($item->dueDate) ?></td>
+                        <td class="<?= $dueDateClass ?>"><?= htmlspecialchars($item->dueDate) ?></td>
                         <td><?= htmlspecialchars($item->clientName) ?></td>
                         <td><?= htmlspecialchars($item->invoiceNumber) ?></td>
                         <td class="amount"><?= euro($item->amount) ?></td>
