@@ -1,0 +1,13 @@
+{
+  "name": "openai/scadenze-fatture",
+  "description": "Gestione scadenze fatture XML attive con Google Calendar",
+  "type": "project",
+  "require": {
+    "php": ">=8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "ScadenzeFatture\\": "src/"
+    }
+  }
+}

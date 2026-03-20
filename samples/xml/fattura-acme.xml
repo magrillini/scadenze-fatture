@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<p:FatturaElettronica versione="FPR12" xmlns:p="http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.2">
+  <FatturaElettronicaHeader>
+    <CessionarioCommittente>
+      <DatiAnagrafici>
+        <IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>01234567890</IdCodice></IdFiscaleIVA>
+        <Anagrafica><Denominazione>ACME SRL</Denominazione></Anagrafica>
+      </DatiAnagrafici>
+    </CessionarioCommittente>
+  </FatturaElettronicaHeader>
+  <p:FatturaElettronicaBody>
+    <DatiGenerali>
+      <DatiGeneraliDocumento>
+        <Data>2026-03-15</Data>
+        <Numero>24/2026</Numero>
+        <ImportoTotaleDocumento>1500.00</ImportoTotaleDocumento>
+      </DatiGeneraliDocumento>
+    </DatiGenerali>
+    <DatiPagamento>
+      <DettaglioPagamento>
+        <ModalitaPagamento>MP05</ModalitaPagamento>
+        <DataScadenzaPagamento>2026-04-15</DataScadenzaPagamento>
+        <ImportoPagamento>1000.00</ImportoPagamento>
+      </DettaglioPagamento>
+      <DettaglioPagamento>
+        <ModalitaPagamento>MP05</ModalitaPagamento>
+        <DataScadenzaPagamento>2026-05-15</DataScadenzaPagamento>
+        <ImportoPagamento>500.00</ImportoPagamento>
+      </DettaglioPagamento>
+    </DatiPagamento>
+  </p:FatturaElettronicaBody>
+</p:FatturaElettronica>
