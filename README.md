@@ -46,6 +46,31 @@ php -S 127.0.0.1:8080 -t public
 
 Apri poi `http://127.0.0.1:8080`.
 
+
+## Area superadmin home
+
+La home include una sezione hero con immagini casuali e **5 layout grafici** selezionati randomicamente ad ogni refresh.
+
+Per gestirla:
+
+1. apri `http://127.0.0.1:8080/?superadmin=1`;
+2. accedi con la password superadmin;
+3. carica da **1 a 5 immagini**;
+4. scegli il numero massimo di foto da mostrare contemporaneamente;
+5. abilita uno o più layout casuali tra 5 varianti.
+
+Password predefinita:
+
+```text
+admin123
+```
+
+Per sicurezza, in produzione imposta la variabile ambiente:
+
+```bash
+export HOME_SUPERADMIN_PASSWORD='una-password-sicura'
+```
+
 ## Google Calendar API
 
 1. Crea credenziali OAuth 2.0 in Google Cloud.
