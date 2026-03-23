@@ -50,8 +50,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
 <div class="container">
     <div class="page-actions">
         <div>
-            <a class="button" href="/index.php">Home</a>
-            <a class="button secondary" href="/controllo.php">CONTROLLO</a>
+            <a class="button" href="index.php">Home</a>
+            <a class="button secondary" href="controllo.php">CONTROLLO</a>
         </div>
         <span class="pill">Monitoraggi dettagliati e filtri operativi</span>
     </div>
