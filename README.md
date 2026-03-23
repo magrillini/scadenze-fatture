@@ -71,6 +71,19 @@ Per sicurezza, in produzione imposta la variabile ambiente:
 export HOME_SUPERADMIN_PASSWORD='una-password-sicura'
 ```
 
+
+## Funzioni avanzate dashboard
+
+La dashboard ora permette di:
+
+- marcare ogni scadenza nel campo **Pagamenti** come pagata;
+- marcare il campo **Avvocato** quando la pratica viene inviata al legale;
+- impostare il **numero rate** per una fattura e rigenerare lo scadenzario in rate mensili;
+- assegnare automaticamente un rating cliente a **5 stelle**, ridotto di una stella per ogni fattura scaduta e non pagata;
+- consultare grafici sintetici su **fatturato**, **riscosso**, **da riscuotere** e **inviato al legale**, con raggruppamento per cliente oppure CF/P.IVA.
+
+I dati operativi vengono salvati in `storage/payment-registry.json`.
+
 ## Google Calendar API
 
 1. Crea credenziali OAuth 2.0 in Google Cloud.
