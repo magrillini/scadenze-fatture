@@ -28,13 +28,13 @@ final class DashboardService
                 'amount' => 0.0,
             ],
             'due_soon' => [
-                'label' => 'Entro 19 giorni',
+                'label' => 'Non pagate entro il mese',
                 'color' => '#f97316',
                 'count' => 0,
                 'amount' => 0.0,
             ],
             'future' => [
-                'label' => 'Oltre 20 giorni',
+                'label' => 'Non pagate dal mese successivo',
                 'color' => '#16a34a',
                 'count' => 0,
                 'amount' => 0.0,
@@ -150,7 +150,16 @@ final class DashboardService
                 $status = $registry['due_statuses'][$dueId] ?? ['paid' => false, 'lawyer' => false];
                 $normalized[] = $due
                     ->withInstallments($index + 1, count($invoiceDues), $due->amount, $due->dueDate, $dueId)
-                    ->withStatus((bool) $status['paid'], (bool) $status['lawyer'], $dueId, $invoiceId);
+                    ->withStatus(
+                        (bool) $status['paid'],
+                        (bool) $status['lawyer'],
+                        isset($status['payment_method']) ? (string) $status['payment_method'] : null,
+                        isset($status['payment_date']) ? (string) $status['payment_date'] : null,
+                        isset($status['payment_amount']) ? (float) $status['payment_amount'] : null,
+                        isset($status['payment_note']) ? (string) $status['payment_note'] : null,
+                        $dueId,
+                        $invoiceId
+                    );
             }
         }
 
@@ -182,7 +191,16 @@ final class DashboardService
             $status = $registry['due_statuses'][$dueId] ?? ['paid' => false, 'lawyer' => false];
             $items[] = $firstDue
                 ->withInstallments($index, $installments, $amount, $dueDate, $dueId)
-                ->withStatus((bool) $status['paid'], (bool) $status['lawyer'], $dueId, $invoiceId);
+                ->withStatus(
+                    (bool) $status['paid'],
+                    (bool) $status['lawyer'],
+                    isset($status['payment_method']) ? (string) $status['payment_method'] : null,
+                    isset($status['payment_date']) ? (string) $status['payment_date'] : null,
+                    isset($status['payment_amount']) ? (float) $status['payment_amount'] : null,
+                    isset($status['payment_note']) ? (string) $status['payment_note'] : null,
+                    $dueId,
+                    $invoiceId
+                );
         }
 
         return $items;
@@ -204,15 +222,18 @@ final class DashboardService
             return 'overdue_unpaid';
         }
 
+        if ($due->paid) {
+            return 'future';
+        }
+
         $dueTimestamp = strtotime($due->dueDate);
         $todayTimestamp = strtotime($today);
         if ($dueTimestamp === false || $todayTimestamp === false) {
             return 'future';
         }
 
-        $daysUntilDue = (int) floor(($dueTimestamp - $todayTimestamp) / 86400);
-
-        if ($daysUntilDue <= 19) {
+        $endOfCurrentMonth = strtotime(date('Y-m-t', $todayTimestamp));
+        if ($endOfCurrentMonth !== false && $dueTimestamp <= $endOfCurrentMonth) {
             return 'due_soon';
         }
 
