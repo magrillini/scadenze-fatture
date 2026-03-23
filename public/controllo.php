@@ -40,9 +40,6 @@ require __DIR__ . '/dashboard-bootstrap.php';
         .status-paid { color: #166534; font-weight: 700; }
         .status-open { color: #92400e; font-weight: 700; }
         .status-legal { color: #991b1b; font-weight: 700; }
-        .compact-form { display: grid; gap: 8px; min-width: 220px; }
-        .compact-form input[type='checkbox'] { width: auto; }
-        .search-form-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
         @media (max-width: 768px) { .bar-row { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -52,6 +49,9 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <div>
             <a class="button" href="index.php">Home</a>
             <a class="button secondary" href="controllo.php">CONTROLLO</a>
+            <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Scadenzario generale</a>
+            <a class="button ghost" href="pagate.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Pagate</a>
+            <a class="button ghost" href="avvocato.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Avvocato</a>
         </div>
         <span class="pill">Monitoraggi dettagliati e filtri operativi</span>
     </div>
@@ -73,25 +73,15 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <section class="card">
         <div class="table-tools">
             <div>
-                <h2>Scadenzario generale</h2>
-                <p class="muted">Ricerca fatture per cliente oppure per fasce di importo totale IVA.</p>
+                <h2>Scadenzario generale su pagina dedicata</h2>
+                <p class="muted">Per una lettura più ampia e ordinata, le pratiche aperte, pagate e affidate all'avvocato sono ora divise in pagine dedicate con gli stessi filtri.</p>
             </div>
-            <div class="pill"><?= count($filteredDues) ?> risultati / <?= count($dues) ?> totali</div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                <a class="button secondary" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Apri scadenzario generale</a>
+                <a class="button ghost" href="pagate.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Apri pagate</a>
+                <a class="button ghost" href="avvocato.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Apri avvocato</a>
+            </div>
         </div>
-        <form method="get" class="search-form-grid">
-            <div><label for="client_search">Cliente / P.IVA / fattura</label><input id="client_search" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>" placeholder="Es. Rossi, IT12345678901, 24/PA"></div>
-            <div><label for="amount_min">Importo minimo IVA inclusa</label><input id="amount_min" name="amount_min" type="number" step="0.01" min="0" value="<?= htmlspecialchars($amountMin) ?>" placeholder="0,00"></div>
-            <div><label for="amount_max">Importo massimo IVA inclusa</label><input id="amount_max" name="amount_max" type="number" step="0.01" min="0" value="<?= htmlspecialchars($amountMax) ?>" placeholder="1000,00"></div>
-            <div>
-                <input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>">
-                <input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>">
-                <input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>">
-                <input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>">
-                <button type="submit">Filtra fatture</button>
-                <a class="button ghost" href="?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Reset filtri</a>
-            </div>
-        </form>
-        <table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Contatti</th><th>Fattura</th><th>Rata</th><th>Pagamento</th><th>Importo</th><th>Pagamenti / Avvocato</th><th>Numero rate</th></tr></thead><tbody><?php foreach ($filteredDues as $due): $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td><td><?= htmlspecialchars($due->clientName) ?><br><span class="muted"><?= htmlspecialchars($due->clientVat ?? '-') ?></span></td><td><?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?></td><td><?= htmlspecialchars($due->invoiceNumber) ?><br><span class="muted">Data: <?= htmlspecialchars($due->invoiceDate) ?></span></td><td><?= $due->installmentNumber ?>/<?= $due->installmentCount ?></td><td><span class="pill"><?= htmlspecialchars($due->paymentTypeLabel) ?></span></td><td class="amount"><?= euro($due->amount) ?></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_due_status"><input type="hidden" name="due_id" value="<?= htmlspecialchars((string) $due->dueId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><label><input type="checkbox" name="pagamenti" value="1" <?= $due->paid ? 'checked' : '' ?>> Pagata</label><label><input type="checkbox" name="avvocato" value="1" <?= $due->lawyer ? 'checked' : '' ?>> Avvocato</label><button type="submit">Salva</button><div class="muted <?= $due->lawyer ? 'status-legal' : ($due->paid ? 'status-paid' : 'status-open') ?>"><?= $due->lawyer ? 'Pratica al legale' : ($due->paid ? 'Incassata' : 'Aperta') ?></div></form></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_installments"><input type="hidden" name="invoice_id" value="<?= htmlspecialchars((string) $due->invoiceId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><input type="number" min="1" max="24" name="numero_rate" value="<?= (int) $due->installmentCount ?>"><button type="submit">Aggiorna rate</button></form></td></tr><?php endforeach; ?><?php if ($filteredDues === []): ?><tr><td colspan="9" class="muted">Nessuna fattura trovata con i filtri selezionati.</td></tr><?php endif; ?></tbody></table>
     </section>
 
     <section class="card"><h2>Esploso per tipo di pagamento</h2><?php foreach ($summary['by_payment_type'] as $code => $group): ?><h3><?= htmlspecialchars($group['label']) ?> (<?= htmlspecialchars($code) ?>)</h3><p>Scadenze: <strong><?= (int) $group['count'] ?></strong> — Totale: <strong><?= euro((float) $group['amount']) ?></strong></p><table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Fattura</th><th>Rata</th><th>Importo</th><th>Stato</th></tr></thead><tbody><?php foreach ($group['items'] as $item): $dueDateClass = isDueBeforeInvoiceDate($item->dueDate, $item->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($item->dueDate) ?></td><td><?= htmlspecialchars($item->clientName) ?></td><td><?= htmlspecialchars($item->invoiceNumber) ?></td><td><?= $item->installmentNumber ?>/<?= $item->installmentCount ?></td><td class="amount"><?= euro($item->amount) ?></td><td><?= $item->lawyer ? 'Avvocato' : ($item->paid ? 'Pagata' : 'Da incassare') ?></td></tr><?php endforeach; ?></tbody></table><?php endforeach; ?></section>

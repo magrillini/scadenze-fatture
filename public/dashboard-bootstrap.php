@@ -131,7 +131,7 @@ try {
     $error = $throwable->getMessage();
 }
 
-$filteredDues = array_values(array_filter($dues, static function ($due) use ($clientSearch, $amountMin, $amountMax): bool {
+$matchesDueFilters = static function ($due) use ($clientSearch, $amountMin, $amountMax): bool {
     if ($clientSearch !== '') {
         $haystack = mb_strtolower($due->clientName . ' ' . ($due->clientVat ?? '') . ' ' . $due->invoiceNumber);
         if (!str_contains($haystack, mb_strtolower($clientSearch))) {
@@ -151,7 +151,15 @@ $filteredDues = array_values(array_filter($dues, static function ($due) use ($cl
     }
 
     return true;
-}));
+};
+
+$openDues = array_values(array_filter($dues, static fn ($due): bool => !$due->paid && !$due->lawyer));
+$paidDues = array_values(array_filter($dues, static fn ($due): bool => $due->paid && !$due->lawyer));
+$lawyerDues = array_values(array_filter($dues, static fn ($due): bool => $due->lawyer));
+
+$filteredDues = array_values(array_filter($openDues, $matchesDueFilters));
+$filteredPaidDues = array_values(array_filter($paidDues, $matchesDueFilters));
+$filteredLawyerDues = array_values(array_filter($lawyerDues, $matchesDueFilters));
 
 $pieSegments = array_map(
     static fn (array $bucket): array => ['label' => $bucket['label'], 'color' => $bucket['color'], 'value' => (float) $bucket['amount'], 'count' => (int) $bucket['count']],
