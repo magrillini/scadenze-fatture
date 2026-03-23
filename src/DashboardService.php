@@ -20,6 +20,26 @@ final class DashboardService
         $legalAmount = 0.0;
         $today = date('Y-m-d');
         $customerStats = [];
+        $agingBuckets = [
+            'overdue_unpaid' => [
+                'label' => 'Scadute non pagate',
+                'color' => '#dc2626',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+            'due_soon' => [
+                'label' => 'Entro 19 giorni',
+                'color' => '#f97316',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+            'future' => [
+                'label' => 'Oltre 20 giorni',
+                'color' => '#16a34a',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+        ];
 
         foreach ($normalizedDues as $due) {
             $key = $due->paymentTypeCode;
@@ -65,6 +85,10 @@ final class DashboardService
             if (!$due->paid && $due->dueDate < $today) {
                 $customerStats[$customerKey]['overdue_unpaid']++;
             }
+
+            $agingKey = $this->resolveAgingBucket($due, $today);
+            $agingBuckets[$agingKey]['count']++;
+            $agingBuckets[$agingKey]['amount'] += $due->amount;
         }
 
         foreach ($customerStats as &$customerStat) {
@@ -89,6 +113,7 @@ final class DashboardService
             'legal_amount' => $legalAmount,
             'by_payment_type' => $byPaymentType,
             'customers' => $customerStats,
+            'aging_buckets' => $agingBuckets,
             'charts' => [
                 'overview' => [
                     'Fatturato' => $totalAmount,
@@ -171,5 +196,26 @@ final class DashboardService
     private function buildDueId(string $invoiceId, int $installmentNumber, string $dueDate, float $amount): string
     {
         return sha1(implode('|', [$invoiceId, $installmentNumber, $dueDate, number_format($amount, 2, '.', '')]));
+    }
+
+    private function resolveAgingBucket(InvoiceDue $due, string $today): string
+    {
+        if (!$due->paid && $due->dueDate < $today) {
+            return 'overdue_unpaid';
+        }
+
+        $dueTimestamp = strtotime($due->dueDate);
+        $todayTimestamp = strtotime($today);
+        if ($dueTimestamp === false || $todayTimestamp === false) {
+            return 'future';
+        }
+
+        $daysUntilDue = (int) floor(($dueTimestamp - $todayTimestamp) / 86400);
+
+        if ($daysUntilDue <= 19) {
+            return 'due_soon';
+        }
+
+        return 'future';
     }
 }
