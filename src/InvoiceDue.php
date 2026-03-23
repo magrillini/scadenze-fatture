@@ -21,12 +21,25 @@ final class InvoiceDue
         public readonly int $installmentCount = 1,
         public readonly bool $paid = false,
         public readonly bool $lawyer = false,
+        public readonly ?string $paymentMethod = null,
+        public readonly ?string $paymentDate = null,
+        public readonly ?float $paymentAmount = null,
+        public readonly ?string $paymentNote = null,
         public readonly ?string $dueId = null,
         public readonly ?string $invoiceId = null,
     ) {
     }
 
-    public function withStatus(bool $paid, bool $lawyer, ?string $dueId = null, ?string $invoiceId = null): self
+    public function withStatus(
+        bool $paid,
+        bool $lawyer,
+        ?string $paymentMethod = null,
+        ?string $paymentDate = null,
+        ?float $paymentAmount = null,
+        ?string $paymentNote = null,
+        ?string $dueId = null,
+        ?string $invoiceId = null
+    ): self
     {
         return new self(
             invoiceNumber: $this->invoiceNumber,
@@ -43,6 +56,10 @@ final class InvoiceDue
             installmentCount: $this->installmentCount,
             paid: $paid,
             lawyer: $lawyer,
+            paymentMethod: $paymentMethod,
+            paymentDate: $paymentDate,
+            paymentAmount: $paymentAmount,
+            paymentNote: $paymentNote,
             dueId: $dueId ?? $this->dueId,
             invoiceId: $invoiceId ?? $this->invoiceId,
         );
@@ -65,6 +82,10 @@ final class InvoiceDue
             installmentCount: $installmentCount,
             paid: $this->paid,
             lawyer: $this->lawyer,
+            paymentMethod: $this->paymentMethod,
+            paymentDate: $this->paymentDate,
+            paymentAmount: $this->paymentAmount,
+            paymentNote: $this->paymentNote,
             dueId: $dueId ?? $this->dueId,
             invoiceId: $this->invoiceId,
         );
@@ -92,6 +113,18 @@ final class InvoiceDue
             'Pagata: ' . ($this->paid ? 'Sì' : 'No'),
             'Avvocato: ' . ($this->lawyer ? 'Sì' : 'No'),
         ];
+
+        if ($this->paymentMethod) {
+            $lines[] = 'Metodo pagamento: ' . $this->paymentMethod;
+        }
+
+        if ($this->paymentDate) {
+            $lines[] = 'Data pagamento: ' . $this->paymentDate;
+        }
+
+        if ($this->paymentAmount !== null) {
+            $lines[] = 'Importo pagato: ' . number_format($this->paymentAmount, 2, ',', '.') . ' €';
+        }
 
         if ($this->phone) {
             $lines[] = 'Telefono: ' . $this->phone;

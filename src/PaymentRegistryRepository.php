@@ -10,7 +10,7 @@ final class PaymentRegistryRepository
     {
     }
 
-    /** @return array{due_statuses:array<string,array{paid:bool,lawyer:bool}>, invoice_overrides:array<string,array{installments:int}>} */
+    /** @return array{due_statuses:array<string,array<string,mixed>>, invoice_overrides:array<string,array{installments:int}>} */
     public function load(): array
     {
         if (!is_file($this->path)) {
@@ -48,10 +48,29 @@ final class PaymentRegistryRepository
         );
     }
 
-    public function updateDueStatus(string $dueId, bool $paid, bool $lawyer): void
+    public function updateDueStatus(
+        string $dueId,
+        bool $paid,
+        bool $lawyer,
+        ?string $paymentMethod = null,
+        ?string $paymentDate = null,
+        ?float $paymentAmount = null,
+        ?string $paymentNote = null
+    ): void
     {
         $data = $this->load();
-        $data['due_statuses'][$dueId] = ['paid' => $paid, 'lawyer' => $lawyer];
+        if ($paymentMethod === 'contanti' && $paymentAmount !== null && $paymentAmount > 3000.0) {
+            throw new \RuntimeException('Il pagamento in contanti non può superare 3.000,00 €.');
+        }
+
+        $data['due_statuses'][$dueId] = [
+            'paid' => $paid,
+            'lawyer' => $lawyer,
+            'payment_method' => $paymentMethod,
+            'payment_date' => $paymentDate,
+            'payment_amount' => $paymentAmount,
+            'payment_note' => $paymentNote,
+        ];
         $this->save($data);
     }
 

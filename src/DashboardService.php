@@ -20,6 +20,26 @@ final class DashboardService
         $legalAmount = 0.0;
         $today = date('Y-m-d');
         $customerStats = [];
+        $agingBuckets = [
+            'overdue_unpaid' => [
+                'label' => 'Scadute non pagate',
+                'color' => '#dc2626',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+            'due_soon' => [
+                'label' => 'Non pagate entro il mese',
+                'color' => '#f97316',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+            'future' => [
+                'label' => 'Non pagate dal mese successivo',
+                'color' => '#16a34a',
+                'count' => 0,
+                'amount' => 0.0,
+            ],
+        ];
 
         foreach ($normalizedDues as $due) {
             $key = $due->paymentTypeCode;
@@ -65,6 +85,10 @@ final class DashboardService
             if (!$due->paid && $due->dueDate < $today) {
                 $customerStats[$customerKey]['overdue_unpaid']++;
             }
+
+            $agingKey = $this->resolveAgingBucket($due, $today);
+            $agingBuckets[$agingKey]['count']++;
+            $agingBuckets[$agingKey]['amount'] += $due->amount;
         }
 
         foreach ($customerStats as &$customerStat) {
@@ -89,6 +113,7 @@ final class DashboardService
             'legal_amount' => $legalAmount,
             'by_payment_type' => $byPaymentType,
             'customers' => $customerStats,
+            'aging_buckets' => $agingBuckets,
             'charts' => [
                 'overview' => [
                     'Fatturato' => $totalAmount,
@@ -125,7 +150,16 @@ final class DashboardService
                 $status = $registry['due_statuses'][$dueId] ?? ['paid' => false, 'lawyer' => false];
                 $normalized[] = $due
                     ->withInstallments($index + 1, count($invoiceDues), $due->amount, $due->dueDate, $dueId)
-                    ->withStatus((bool) $status['paid'], (bool) $status['lawyer'], $dueId, $invoiceId);
+                    ->withStatus(
+                        (bool) $status['paid'],
+                        (bool) $status['lawyer'],
+                        isset($status['payment_method']) ? (string) $status['payment_method'] : null,
+                        isset($status['payment_date']) ? (string) $status['payment_date'] : null,
+                        isset($status['payment_amount']) ? (float) $status['payment_amount'] : null,
+                        isset($status['payment_note']) ? (string) $status['payment_note'] : null,
+                        $dueId,
+                        $invoiceId
+                    );
             }
         }
 
@@ -157,7 +191,16 @@ final class DashboardService
             $status = $registry['due_statuses'][$dueId] ?? ['paid' => false, 'lawyer' => false];
             $items[] = $firstDue
                 ->withInstallments($index, $installments, $amount, $dueDate, $dueId)
-                ->withStatus((bool) $status['paid'], (bool) $status['lawyer'], $dueId, $invoiceId);
+                ->withStatus(
+                    (bool) $status['paid'],
+                    (bool) $status['lawyer'],
+                    isset($status['payment_method']) ? (string) $status['payment_method'] : null,
+                    isset($status['payment_date']) ? (string) $status['payment_date'] : null,
+                    isset($status['payment_amount']) ? (float) $status['payment_amount'] : null,
+                    isset($status['payment_note']) ? (string) $status['payment_note'] : null,
+                    $dueId,
+                    $invoiceId
+                );
         }
 
         return $items;
@@ -171,5 +214,29 @@ final class DashboardService
     private function buildDueId(string $invoiceId, int $installmentNumber, string $dueDate, float $amount): string
     {
         return sha1(implode('|', [$invoiceId, $installmentNumber, $dueDate, number_format($amount, 2, '.', '')]));
+    }
+
+    private function resolveAgingBucket(InvoiceDue $due, string $today): string
+    {
+        if (!$due->paid && $due->dueDate < $today) {
+            return 'overdue_unpaid';
+        }
+
+        if ($due->paid) {
+            return 'future';
+        }
+
+        $dueTimestamp = strtotime($due->dueDate);
+        $todayTimestamp = strtotime($today);
+        if ($dueTimestamp === false || $todayTimestamp === false) {
+            return 'future';
+        }
+
+        $endOfCurrentMonth = strtotime(date('Y-m-t', $todayTimestamp));
+        if ($endOfCurrentMonth !== false && $dueTimestamp <= $endOfCurrentMonth) {
+            return 'due_soon';
+        }
+
+        return 'future';
     }
 }
