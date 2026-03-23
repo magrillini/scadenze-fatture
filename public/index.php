@@ -18,7 +18,7 @@ $homeConfigPath = $storageDirectory . '/home-settings.json';
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $homeUploadDirectory = __DIR__ . '/uploads/home';
 $adminPassword = getenv('HOME_SUPERADMIN_PASSWORD') ?: 'admin123';
-$currentPage = (($_GET['pagina'] ?? '') === 'controllo' || basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php')) === 'controllo.php') ? 'controllo' : 'home';
+$currentPage = (($_GET['pagina'] ?? '') === 'controllo') ? 'controllo' : 'home';
 
 $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/samples/xml');
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/samples/contatti-clienti.csv');

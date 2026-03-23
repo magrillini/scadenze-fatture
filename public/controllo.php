@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
-$_GET['pagina'] = 'controllo';
+$query = $_GET;
+$query['pagina'] = 'controllo';
 
-require __DIR__ . '/index.php';
+header('Location: /index.php?' . http_build_query($query));
+exit;
