@@ -23,6 +23,9 @@ $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirnam
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/samples/contatti-clienti.csv');
 $calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
+$clientSearch = trim($_POST['client_search'] ?? $_GET['client_search'] ?? '');
+$amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');
+$amountMax = trim($_POST['amount_max'] ?? $_GET['amount_max'] ?? '');
 $message = null;
 $error = null;
 $dues = [];
@@ -157,6 +160,29 @@ function percentOf(float $value, float $max): float
 
     return min(100, max(0, ($value / $max) * 100));
 }
+
+function buildPieGradient(array $segments): string
+{
+    $total = array_reduce($segments, static fn (float $carry, array $segment): float => $carry + (float) ($segment['value'] ?? 0), 0.0);
+    if ($total <= 0) {
+        return 'conic-gradient(#d1d5db 0 100%)';
+    }
+
+    $start = 0.0;
+    $parts = [];
+    foreach ($segments as $segment) {
+        $value = (float) ($segment['value'] ?? 0);
+        if ($value <= 0) {
+            continue;
+        }
+
+        $end = $start + (($value / $total) * 100);
+        $parts[] = sprintf('%s %.2f%% %.2f%%', $segment['color'], $start, $end);
+        $start = $end;
+    }
+
+    return 'conic-gradient(' . implode(', ', $parts) . ')';
+}
 ?>
 <!DOCTYPE html>
 <html lang="it">
@@ -223,6 +249,16 @@ function percentOf(float $value, float $max): float
         .status-legal { color: #991b1b; font-weight: 700; }
         .compact-form { display: grid; gap: 8px; min-width: 220px; }
         .compact-form input[type='checkbox'] { width: auto; }
+        .pie-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+        .pie-card { border: 1px solid #e5e7eb; border-radius: 16px; padding: 18px; background: #f9fafb; }
+        .pie-wrapper { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+        .pie-chart { width: 160px; height: 160px; border-radius: 50%; position: relative; flex: 0 0 auto; }
+        .pie-chart::after { content: ''; position: absolute; inset: 24px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 1px #e5e7eb; }
+        .legend { display: grid; gap: 10px; flex: 1; min-width: 180px; }
+        .legend-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+        .legend-color { width: 14px; height: 14px; border-radius: 999px; }
+        .search-form-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); align-items: end; }
+        .table-tools { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; }
         @media (max-width: 768px) { .home-gallery.layout-2,.home-gallery.layout-3,.home-gallery.layout-4,.home-gallery.layout-5 { grid-template-columns: 1fr; } .home-gallery.layout-5 .home-photo { grid-column: auto !important; } .bar-row { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -243,6 +279,36 @@ function percentOf(float $value, float $max): float
     <section class="card"><h2>Area superadmin: gestione immagini home</h2><p class="muted">Puoi configurare da 1 a 5 foto attive. Ad ogni refresh la home sceglie in modo casuale il layout e l'insieme di immagini da mostrare.</p><?php if (empty($_SESSION['is_superadmin'])): ?><form method="post"><input type="hidden" name="superadmin" value="1"><input type="hidden" name="action" value="superadmin_login"><div class="grid"><div><label for="superadmin_password">Password superadmin</label><input id="superadmin_password" type="password" name="superadmin_password" placeholder="Inserisci la password superadmin"><p class="muted">Password predefinita: <code>admin123</code>.</p></div></div><p><button type="submit">Accedi</button></p></form><?php else: ?><form method="post" enctype="multipart/form-data"><input type="hidden" name="superadmin" value="1"><input type="hidden" name="action" value="save_home_settings"><div class="grid"><div><label for="headline">Titolo hero</label><input id="headline" name="headline" value="<?= htmlspecialchars($homeSettings['headline']) ?>"></div><div><label for="max_photos">Numero massimo foto da mostrare</label><select id="max_photos" name="max_photos"><?php for ($i = 1; $i <= 5; $i++): ?><option value="<?= $i ?>" <?= $i === (int) $homeSettings['max_photos'] ? 'selected' : '' ?>><?= $i ?> foto</option><?php endfor; ?></select></div></div><div style="margin-top:16px;"><label for="subheadline">Sottotitolo hero</label><textarea id="subheadline" name="subheadline"><?= htmlspecialchars($homeSettings['subheadline']) ?></textarea></div><div style="margin-top:16px;"><label>Abilita uno o più layout casuali</label><div class="checkbox-grid"><?php for ($layout = 1; $layout <= 5; $layout++): ?><label><input type="checkbox" name="enabled_layouts[]" value="<?= $layout ?>" <?= in_array($layout, $homeSettings['enabled_layouts'], true) ? 'checked' : '' ?>>Layout <?= $layout ?></label><?php endfor; ?></div></div><div class="grid" style="margin-top:20px;"><?php for ($slot = 0; $slot < 5; $slot++): $image = $homeSettings['images'][$slot] ?? null; ?><div class="image-editor"><h3>Foto <?= $slot + 1 ?></h3><?php if ($image !== null): ?><img class="image-preview" src="<?= htmlspecialchars($image['path']) ?>?v=<?= urlencode((string) ($image['updated_at'] ?? '1')) ?>" alt="Anteprima foto <?= $slot + 1 ?>"><input type="hidden" name="keep_image[<?= $slot ?>]" value="<?= htmlspecialchars($image['filename']) ?>"><?php else: ?><div class="image-preview" style="display:flex;align-items:center;justify-content:center;color:#6b7280;">Nessuna immagine caricata</div><?php endif; ?><label>Carica / sostituisci immagine</label><input type="file" name="home_images[<?= $slot ?>]" accept="image/png,image/jpeg,image/webp,image/gif"><div style="margin-top:12px;"><label>Titolo foto</label><input name="image_title[<?= $slot ?>]" value="<?= htmlspecialchars($image['title'] ?? ('Foto home ' . ($slot + 1))) ?>"></div><div style="margin-top:12px;"><label>Descrizione foto</label><textarea name="image_caption[<?= $slot ?>]"><?= htmlspecialchars($image['caption'] ?? 'Immagine hero gestita da superadmin.') ?></textarea></div><?php if ($image !== null): ?><label style="margin-top:12px; display:flex; align-items:center; gap:8px; font-weight:600;"><input type="checkbox" name="remove_image[<?= $slot ?>]" value="1" style="width:auto;">Rimuovi questa foto</label><?php endif; ?></div><?php endfor; ?></div><p style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;"><button type="submit">Salva configurazione home</button><a class="button ghost" href="/index.php">Torna alla dashboard</a></p></form><?php endif; ?></section>
     <?php endif; ?>
 
+    <?php
+    $filteredDues = array_values(array_filter($dues, static function ($due) use ($clientSearch, $amountMin, $amountMax): bool {
+        if ($clientSearch !== '') {
+            $haystack = mb_strtolower($due->clientName . ' ' . ($due->clientVat ?? '') . ' ' . $due->invoiceNumber);
+            if (!str_contains($haystack, mb_strtolower($clientSearch))) {
+                return false;
+            }
+        }
+
+        $min = $amountMin !== '' ? (float) str_replace(',', '.', $amountMin) : null;
+        $max = $amountMax !== '' ? (float) str_replace(',', '.', $amountMax) : null;
+
+        if ($min !== null && $due->amount < $min) {
+            return false;
+        }
+
+        if ($max !== null && $due->amount > $max) {
+            return false;
+        }
+
+        return true;
+    }));
+    $pieSegments = array_map(
+        static fn (array $bucket): array => ['label' => $bucket['label'], 'color' => $bucket['color'], 'value' => (float) $bucket['amount'], 'count' => (int) $bucket['count']],
+        array_values($summary['aging_buckets'] ?? [])
+    );
+    $pieByCount = array_map(static fn (array $segment): array => ['label' => $segment['label'], 'color' => $segment['color'], 'value' => (float) $segment['count']], $pieSegments);
+    $pieByAmount = array_map(static fn (array $segment): array => ['label' => $segment['label'], 'color' => $segment['color'], 'value' => (float) $segment['value']], $pieSegments);
+    ?>
+
     <h2>Dashboard scadenze</h2>
     <p>Monitora fatturato, riscosso, da riscuotere, pratiche inviate al legale, rateizzazione e rating cliente a 5 stelle.</p>
 
@@ -258,11 +324,69 @@ function percentOf(float $value, float $max): float
 
     <div class="card"><h2>Grafico overview</h2><div class="chart"><?php $overviewMax = max($summary['charts']['overview'] ?: [0]); foreach ($summary['charts']['overview'] as $label => $value): ?><div class="bar-row"><strong><?= htmlspecialchars($label) ?></strong><div class="bar-track"><div class="bar-fill" style="width: <?= number_format(percentOf((float) $value, (float) $overviewMax), 2, '.', '') ?>%;"></div></div><span class="amount"><?= euro((float) $value) ?></span></div><?php endforeach; ?></div></div>
 
+    <div class="card">
+        <h2>Grafici a torta scadenze</h2>
+        <p class="muted">Rosso per fatture scadute e non pagate, arancione per scadenze entro 19 giorni, verde per scadenze oltre 20 giorni.</p>
+        <div class="pie-grid">
+            <div class="pie-card">
+                <h3>Distribuzione per importo totale IVA</h3>
+                <div class="pie-wrapper">
+                    <div class="pie-chart" style="background: <?= htmlspecialchars(buildPieGradient($pieByAmount)) ?>;"></div>
+                    <div class="legend">
+                        <?php foreach ($pieSegments as $segment): ?>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: <?= htmlspecialchars($segment['color']) ?>;"></span>
+                                <span><?= htmlspecialchars($segment['label']) ?></span>
+                                <strong><?= euro((float) $segment['value']) ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+            <div class="pie-card">
+                <h3>Distribuzione per numero fatture</h3>
+                <div class="pie-wrapper">
+                    <div class="pie-chart" style="background: <?= htmlspecialchars(buildPieGradient($pieByCount)) ?>;"></div>
+                    <div class="legend">
+                        <?php foreach ($pieSegments as $segment): ?>
+                            <div class="legend-item">
+                                <span class="legend-color" style="background: <?= htmlspecialchars($segment['color']) ?>;"></span>
+                                <span><?= htmlspecialchars($segment['label']) ?></span>
+                                <strong><?= (int) $segment['count'] ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card"><h2>Grafico clienti / CF</h2><p class="muted">Ordinato per grandezza di cifra e raggruppato per <?= $chartGroupBy === 'cf' ? 'codice fiscale / partita IVA' : 'cliente' ?>.</p><div class="chart"><?php $customersMax = 0.0; foreach ($summary['customers'] as $customer) { $customersMax = max($customersMax, (float) $customer['turnover']); } foreach ($summary['customers'] as $customer): $label = $chartGroupBy === 'cf' ? ($customer['cf'] ?: '-') : $customer['client']; ?><div class="bar-row"><div><strong><?= htmlspecialchars($label) ?></strong><br><span class="muted"><?= htmlspecialchars($customer['client']) ?></span> — <span class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></span></div><div class="bar-track"><div class="bar-fill" style="width: <?= number_format(percentOf((float) $customer['turnover'], $customersMax), 2, '.', '') ?>%;"></div></div><span class="amount"><?= euro((float) $customer['turnover']) ?></span></div><?php endforeach; ?></div></div>
 
     <div class="card"><h2>Rating clienti</h2><table><thead><tr><th>Cliente</th><th>CF / P.IVA</th><th>Stelle</th><th>Fatturato</th><th>Riscosso</th><th>Da riscuotere</th><th>Legale</th></tr></thead><tbody><?php foreach ($summary['customers'] as $customer): ?><tr><td><?= htmlspecialchars($customer['client']) ?></td><td><?= htmlspecialchars($customer['cf']) ?></td><td class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></td><td class="amount"><?= euro((float) $customer['turnover']) ?></td><td class="amount"><?= euro((float) $customer['collected']) ?></td><td class="amount"><?= euro((float) $customer['outstanding']) ?></td><td class="amount"><?= euro((float) $customer['legal']) ?></td></tr><?php endforeach; ?></tbody></table></div>
 
-    <div class="card"><h2>Scadenzario generale</h2><table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Contatti</th><th>Fattura</th><th>Rata</th><th>Pagamento</th><th>Importo</th><th>Pagamenti / Avvocato</th><th>Numero rate</th></tr></thead><tbody><?php foreach ($dues as $due): $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td><td><?= htmlspecialchars($due->clientName) ?><br><span class="muted"><?= htmlspecialchars($due->clientVat ?? '-') ?></span></td><td><?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?></td><td><?= htmlspecialchars($due->invoiceNumber) ?><br><span class="muted">Data: <?= htmlspecialchars($due->invoiceDate) ?></span></td><td><?= $due->installmentNumber ?>/<?= $due->installmentCount ?></td><td><span class="pill"><?= htmlspecialchars($due->paymentTypeLabel) ?></span></td><td class="amount"><?= euro($due->amount) ?></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_due_status"><input type="hidden" name="due_id" value="<?= htmlspecialchars((string) $due->dueId) ?>"><label><input type="checkbox" name="pagamenti" value="1" <?= $due->paid ? 'checked' : '' ?>> Pagata</label><label><input type="checkbox" name="avvocato" value="1" <?= $due->lawyer ? 'checked' : '' ?>> Avvocato</label><button type="submit">Salva</button><div class="muted <?= $due->lawyer ? 'status-legal' : ($due->paid ? 'status-paid' : 'status-open') ?>"><?= $due->lawyer ? 'Pratica al legale' : ($due->paid ? 'Incassata' : 'Aperta') ?></div></form></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_installments"><input type="hidden" name="invoice_id" value="<?= htmlspecialchars((string) $due->invoiceId) ?>"><input type="number" min="1" max="24" name="numero_rate" value="<?= (int) $due->installmentCount ?>"><button type="submit">Aggiorna rate</button></form></td></tr><?php endforeach; ?></tbody></table></div>
+    <div class="card">
+        <div class="table-tools">
+            <div>
+                <h2>Scadenzario generale</h2>
+                <p class="muted">Ricerca fatture per cliente oppure per fasce di importo totale IVA.</p>
+            </div>
+            <div class="pill"><?= count($filteredDues) ?> risultati / <?= count($dues) ?> totali</div>
+        </div>
+        <form method="get" class="search-form-grid">
+            <div><label for="client_search">Cliente / P.IVA / fattura</label><input id="client_search" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>" placeholder="Es. Rossi, IT12345678901, 24/PA"></div>
+            <div><label for="amount_min">Importo minimo IVA inclusa</label><input id="amount_min" name="amount_min" type="number" step="0.01" min="0" value="<?= htmlspecialchars($amountMin) ?>" placeholder="0,00"></div>
+            <div><label for="amount_max">Importo massimo IVA inclusa</label><input id="amount_max" name="amount_max" type="number" step="0.01" min="0" value="<?= htmlspecialchars($amountMax) ?>" placeholder="1000,00"></div>
+            <div>
+                <input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>">
+                <input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>">
+                <input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>">
+                <input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>">
+                <button type="submit">Filtra fatture</button>
+                <a class="button ghost" href="?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Reset filtri</a>
+            </div>
+        </form>
+        <table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Contatti</th><th>Fattura</th><th>Rata</th><th>Pagamento</th><th>Importo</th><th>Pagamenti / Avvocato</th><th>Numero rate</th></tr></thead><tbody><?php foreach ($filteredDues as $due): $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td><td><?= htmlspecialchars($due->clientName) ?><br><span class="muted"><?= htmlspecialchars($due->clientVat ?? '-') ?></span></td><td><?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?></td><td><?= htmlspecialchars($due->invoiceNumber) ?><br><span class="muted">Data: <?= htmlspecialchars($due->invoiceDate) ?></span></td><td><?= $due->installmentNumber ?>/<?= $due->installmentCount ?></td><td><span class="pill"><?= htmlspecialchars($due->paymentTypeLabel) ?></span></td><td class="amount"><?= euro($due->amount) ?></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_due_status"><input type="hidden" name="due_id" value="<?= htmlspecialchars((string) $due->dueId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><label><input type="checkbox" name="pagamenti" value="1" <?= $due->paid ? 'checked' : '' ?>> Pagata</label><label><input type="checkbox" name="avvocato" value="1" <?= $due->lawyer ? 'checked' : '' ?>> Avvocato</label><button type="submit">Salva</button><div class="muted <?= $due->lawyer ? 'status-legal' : ($due->paid ? 'status-paid' : 'status-open') ?>"><?= $due->lawyer ? 'Pratica al legale' : ($due->paid ? 'Incassata' : 'Aperta') ?></div></form></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_installments"><input type="hidden" name="invoice_id" value="<?= htmlspecialchars((string) $due->invoiceId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><input type="number" min="1" max="24" name="numero_rate" value="<?= (int) $due->installmentCount ?>"><button type="submit">Aggiorna rate</button></form></td></tr><?php endforeach; ?><?php if ($filteredDues === []): ?><tr><td colspan="9" class="muted">Nessuna fattura trovata con i filtri selezionati.</td></tr><?php endif; ?></tbody></table></div>
 
     <div class="card"><h2>Esploso per tipo di pagamento</h2><?php foreach ($summary['by_payment_type'] as $code => $group): ?><h3><?= htmlspecialchars($group['label']) ?> (<?= htmlspecialchars($code) ?>)</h3><p>Scadenze: <strong><?= (int) $group['count'] ?></strong> — Totale: <strong><?= euro((float) $group['amount']) ?></strong></p><table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Fattura</th><th>Rata</th><th>Importo</th><th>Stato</th></tr></thead><tbody><?php foreach ($group['items'] as $item): $dueDateClass = isDueBeforeInvoiceDate($item->dueDate, $item->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($item->dueDate) ?></td><td><?= htmlspecialchars($item->clientName) ?></td><td><?= htmlspecialchars($item->invoiceNumber) ?></td><td><?= $item->installmentNumber ?>/<?= $item->installmentCount ?></td><td class="amount"><?= euro($item->amount) ?></td><td><?= $item->lawyer ? 'Avvocato' : ($item->paid ? 'Pagata' : 'Da incassare') ?></td></tr><?php endforeach; ?></tbody></table><?php endforeach; ?></div>
 </div>
