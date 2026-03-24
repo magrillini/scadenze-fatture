@@ -48,24 +48,6 @@ require __DIR__ . '/dashboard-bootstrap.php';
         .legend { display: grid; gap: 10px; flex: 1; min-width: 180px; }
         .legend-item { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
         .legend-color { width: 14px; height: 14px; border-radius: 999px; }
-        .home-gallery { display: grid; gap: 14px; }
-        .home-gallery.layout-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-        .home-gallery.layout-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .home-gallery.layout-3 { grid-template-columns: 1.2fr .8fr .8fr; }
-        .home-gallery.layout-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .home-gallery.layout-5 { grid-template-columns: repeat(12, minmax(0, 1fr)); }
-        .home-gallery.layout-5 .home-photo:first-child { grid-column: span 6; }
-        .home-gallery.layout-5 .home-photo:nth-child(2), .home-gallery.layout-5 .home-photo:nth-child(3) { grid-column: span 3; }
-        .home-gallery.layout-5 .home-photo:nth-child(n+4) { grid-column: span 4; }
-        .home-photo { position: relative; min-height: 220px; border-radius: 18px; overflow: hidden; background: rgba(255,255,255,.1); }
-        .home-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .home-photo figcaption { position: absolute; inset: auto 0 0 0; padding: 16px; background: linear-gradient(180deg, transparent, rgba(17,24,39,.86)); }
-        .home-photo strong, .home-photo span { display: block; }
-        .home-photo span { margin-top: 4px; font-size: 14px; color: rgba(255,255,255,.82); }
-        .home-empty, .image-editor { border-radius: 16px; }
-        .home-empty { padding: 20px; border: 1px dashed rgba(255,255,255,.4); background: rgba(255,255,255,.1); }
-        .image-editor { border: 1px solid #e5e7eb; padding: 16px; background: #f9fafb; }
-        .image-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 12px; background: #e5e7eb; }
         @media (max-width: 768px) { .bar-row { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -74,8 +56,6 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <div class="page-actions">
         <a class="button" href="index.php">Home</a>
         <a class="button secondary" href="controllo.php">Apri CONTROLLO</a>
-        <a class="button ghost" href="?superadmin=1">Area superadmin home</a>
-        <?php if (!empty($_SESSION['is_superadmin'])): ?><a class="button ghost" href="?action=superadmin_logout">Logout superadmin</a><?php endif; ?>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
@@ -84,7 +64,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <section class="card hero">
         <div class="hero-content">
             <div>
-                <h1>CONTROLLO FATTURE XML</h1>
+                <h1>CONTROLLO FATTURE XML — IO RECUPERO</h1>
                 <p>Questa home mostra il riepilogo generale. Tutti i monitoraggi operativi, le ricerche e i controlli dettagliati sono disponibili nella pagina dedicata <strong>CONTROLLO</strong>.</p>
             </div>
             <div class="hero-badges">
@@ -95,13 +75,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
             <div>
                 <a class="button secondary" href="controllo.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Vai alla pagina CONTROLLO</a>
             </div>
-            <?php if ($selectedHomeVariant['images'] !== []): ?><div class="home-gallery layout-<?= (int) $selectedHomeVariant['layout'] ?>"><?php foreach ($selectedHomeVariant['images'] as $image): ?><figure class="home-photo"><img src="<?= htmlspecialchars($image['path']) ?>?v=<?= urlencode((string) ($image['updated_at'] ?? '1')) ?>" alt="<?= htmlspecialchars($image['title']) ?>"><figcaption><strong><?= htmlspecialchars($image['title']) ?></strong><span><?= htmlspecialchars($image['caption']) ?></span></figcaption></figure><?php endforeach; ?></div><?php else: ?><div class="home-empty"><strong>Nessuna foto configurata.</strong><p>Apri l'area superadmin per caricare da 1 a 5 immagini e attivare i layout casuali della home.</p></div><?php endif; ?>
         </div>
     </section>
-
-    <?php if ($showSuperadmin): ?>
-    <section class="card"><h2>Area superadmin: gestione immagini home</h2><p class="muted">Puoi configurare da 1 a 5 foto attive. Ad ogni refresh la home sceglie in modo casuale il layout e l'insieme di immagini da mostrare.</p><?php if (empty($_SESSION['is_superadmin'])): ?><form method="post"><input type="hidden" name="superadmin" value="1"><input type="hidden" name="action" value="superadmin_login"><div class="grid"><div><label for="superadmin_password">Password superadmin</label><input id="superadmin_password" type="password" name="superadmin_password" placeholder="Inserisci la password superadmin"><p class="muted">Password predefinita: <code>admin123</code>.</p></div></div><p><button class="button" type="submit">Accedi</button></p></form><?php else: ?><form method="post" enctype="multipart/form-data"><input type="hidden" name="superadmin" value="1"><input type="hidden" name="action" value="save_home_settings"><div class="grid"><div><label for="headline">Titolo hero</label><input id="headline" name="headline" value="<?= htmlspecialchars($homeSettings['headline']) ?>"></div><div><label for="max_photos">Numero massimo foto da mostrare</label><select id="max_photos" name="max_photos"><?php for ($i = 1; $i <= 5; $i++): ?><option value="<?= $i ?>" <?= $i === (int) $homeSettings['max_photos'] ? 'selected' : '' ?>><?= $i ?> foto</option><?php endfor; ?></select></div></div><div style="margin-top:16px;"><label for="subheadline">Sottotitolo hero</label><textarea id="subheadline" name="subheadline"><?= htmlspecialchars($homeSettings['subheadline']) ?></textarea></div><div style="margin-top:16px;"><label>Abilita uno o più layout casuali</label><div class="grid"><?php for ($layout = 1; $layout <= 5; $layout++): ?><label><input type="checkbox" name="enabled_layouts[]" value="<?= $layout ?>" <?= in_array($layout, $homeSettings['enabled_layouts'], true) ? 'checked' : '' ?> style="width:auto;"> Layout <?= $layout ?></label><?php endfor; ?></div></div><div class="grid" style="margin-top:20px;"><?php for ($slot = 0; $slot < 5; $slot++): $image = $homeSettings['images'][$slot] ?? null; ?><div class="image-editor"><h3>Foto <?= $slot + 1 ?></h3><?php if ($image !== null): ?><img class="image-preview" src="<?= htmlspecialchars($image['path']) ?>?v=<?= urlencode((string) ($image['updated_at'] ?? '1')) ?>" alt="Anteprima foto <?= $slot + 1 ?>"><input type="hidden" name="keep_image[<?= $slot ?>]" value="<?= htmlspecialchars($image['filename']) ?>"><?php else: ?><div class="image-preview" style="display:flex;align-items:center;justify-content:center;color:#6b7280;">Nessuna immagine caricata</div><?php endif; ?><label>Carica / sostituisci immagine</label><input type="file" name="home_images[<?= $slot ?>]" accept="image/png,image/jpeg,image/webp,image/gif"><div style="margin-top:12px;"><label>Titolo foto</label><input name="image_title[<?= $slot ?>]" value="<?= htmlspecialchars($image['title'] ?? ('Foto home ' . ($slot + 1))) ?>"></div><div style="margin-top:12px;"><label>Descrizione foto</label><textarea name="image_caption[<?= $slot ?>]"><?= htmlspecialchars($image['caption'] ?? 'Immagine hero gestita da superadmin.') ?></textarea></div><?php if ($image !== null): ?><label style="margin-top:12px; display:flex; align-items:center; gap:8px; font-weight:600;"><input type="checkbox" name="remove_image[<?= $slot ?>]" value="1" style="width:auto;">Rimuovi questa foto</label><?php endif; ?></div><?php endfor; ?></div><p style="margin-top:20px;"><button class="button" type="submit">Salva configurazione home</button></p></form><?php endif; ?></section>
-    <?php endif; ?>
 
     <section class="grid">
         <div class="card metric-card"><strong>Scadenze totali</strong><br><span class="amount"><?= (int) $summary['total_dues'] ?></span></div>
