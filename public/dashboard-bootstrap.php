@@ -5,7 +5,6 @@ declare(strict_types=1);
 use ScadenzeFatture\ContactsRepository;
 use ScadenzeFatture\DashboardService;
 use ScadenzeFatture\GoogleCalendarService;
-use ScadenzeFatture\HomeSettingsRepository;
 use ScadenzeFatture\InvoiceParser;
 use ScadenzeFatture\PaymentRegistryRepository;
 
@@ -14,10 +13,7 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 session_start();
 
 $storageDirectory = dirname(__DIR__) . '/storage';
-$homeConfigPath = $storageDirectory . '/home-settings.json';
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
-$homeUploadDirectory = __DIR__ . '/uploads/home';
-$adminPassword = getenv('HOME_SUPERADMIN_PASSWORD') ?: 'admin123';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 
 $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/samples/xml');
@@ -31,11 +27,7 @@ $message = null;
 $error = null;
 $dues = [];
 $summary = ['total_dues' => 0, 'total_amount' => 0.0, 'collected_amount' => 0.0, 'outstanding_amount' => 0.0, 'legal_amount' => 0.0, 'by_payment_type' => [], 'customers' => [], 'charts' => ['overview' => [], 'by_customer' => []]];
-$showSuperadmin = isset($_GET['superadmin']) || isset($_POST['superadmin']);
-$homeRepository = new HomeSettingsRepository($homeConfigPath, $homeUploadDirectory);
 $paymentRegistry = new PaymentRegistryRepository($paymentRegistryPath);
-$homeSettings = $homeRepository->load();
-$selectedHomeVariant = $homeRepository->selectVariant($homeSettings);
 
 $contactsRepository = new ContactsRepository();
 $parser = new InvoiceParser();
@@ -53,20 +45,6 @@ $redirectUri = sprintf(
 );
 
 try {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'superadmin_login') {
-        if (hash_equals($adminPassword, (string) ($_POST['superadmin_password'] ?? ''))) {
-            $_SESSION['is_superadmin'] = true;
-            $message = 'Accesso superadmin eseguito correttamente.';
-        } else {
-            $error = 'Password superadmin non valida.';
-        }
-    }
-
-    if (isset($_GET['action']) && $_GET['action'] === 'superadmin_logout') {
-        unset($_SESSION['is_superadmin']);
-        $message = 'Sessione superadmin terminata.';
-    }
-
     if (isset($_GET['action']) && $_GET['action'] === 'connect_google') {
         if (!$googleService->isConfigured()) {
             throw new RuntimeException('Config Google mancante: crea config/google-calendar.local.json partendo dal file example.');
@@ -79,26 +57,6 @@ try {
     if (isset($_GET['action']) && $_GET['action'] === 'oauth_callback' && isset($_GET['code'])) {
         $googleService->fetchAndStoreAccessToken((string) $_GET['code'], $redirectUri);
         $message = 'Google Calendar collegato correttamente.';
-    }
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_home_settings') {
-        if (empty($_SESSION['is_superadmin'])) {
-            throw new RuntimeException('Accesso superadmin richiesto per modificare la home.');
-        }
-
-        $homeSettings = $homeRepository->saveSettings([
-            'headline' => trim((string) ($_POST['headline'] ?? 'Controllo Fatture XML')),
-            'subheadline' => trim((string) ($_POST['subheadline'] ?? 'Panoramica generale in home e area CONTROLLO dedicata ai monitoraggi operativi.')),
-            'max_photos' => (int) ($_POST['max_photos'] ?? 1),
-            'enabled_layouts' => array_map('intval', $_POST['enabled_layouts'] ?? []),
-            'image_title' => $_POST['image_title'] ?? [],
-            'image_caption' => $_POST['image_caption'] ?? [],
-            'keep_image' => $_POST['keep_image'] ?? [],
-            'remove_image' => $_POST['remove_image'] ?? [],
-        ], $_FILES['home_images'] ?? null);
-
-        $selectedHomeVariant = $homeRepository->selectVariant($homeSettings);
-        $message = 'Impostazioni home aggiornate con successo.';
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_due_status') {
