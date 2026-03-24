@@ -84,7 +84,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <section class="card hero">
         <div class="hero-content">
             <div>
-                <h1>CONTROLLO FATTURE XML</h1>
+                <h1>CONTROLLO FATTURE XML — IO RECUPERO</h1>
                 <p>Questa home mostra il riepilogo generale. Tutti i monitoraggi operativi, le ricerche e i controlli dettagliati sono disponibili nella pagina dedicata <strong>CONTROLLO</strong>.</p>
             </div>
             <div class="hero-badges">
