@@ -32,6 +32,10 @@ $error = null;
 $dues = [];
 $summary = ['total_dues' => 0, 'total_amount' => 0.0, 'collected_amount' => 0.0, 'outstanding_amount' => 0.0, 'legal_amount' => 0.0, 'by_payment_type' => [], 'customers' => [], 'charts' => ['overview' => [], 'by_customer' => []]];
 $showSuperadmin = isset($_GET['superadmin']) || isset($_POST['superadmin']);
+$flashMessage = $_SESSION['flash_message'] ?? null;
+if ($flashMessage !== null) {
+    unset($_SESSION['flash_message']);
+}
 $homeRepository = new HomeSettingsRepository($homeConfigPath, $homeUploadDirectory);
 $paymentRegistry = new PaymentRegistryRepository($paymentRegistryPath);
 $homeSettings = $homeRepository->load();
@@ -107,7 +111,18 @@ try {
             isset($_POST['pagamenti']),
             isset($_POST['avvocato'])
         );
-        $message = 'Stato pagamento aggiornato.';
+        $_SESSION['flash_message'] = 'Stato pagamento aggiornato.';
+        $redirectParams = [
+            'xml_directory' => (string) ($_POST['xml_directory'] ?? ''),
+            'contacts_path' => (string) ($_POST['contacts_path'] ?? ''),
+            'calendar_id' => (string) ($_POST['calendar_id'] ?? ''),
+            'chart_group_by' => (string) ($_POST['chart_group_by'] ?? ''),
+            'client_search' => (string) ($_POST['client_search'] ?? ''),
+            'amount_min' => (string) ($_POST['amount_min'] ?? ''),
+            'amount_max' => (string) ($_POST['amount_max'] ?? ''),
+        ];
+        header('Location: ' . $currentScript . '?' . http_build_query($redirectParams));
+        exit;
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_installments') {
@@ -115,7 +130,18 @@ try {
             (string) ($_POST['invoice_id'] ?? ''),
             max(1, (int) ($_POST['numero_rate'] ?? 1))
         );
-        $message = 'Numero rate aggiornato con successo.';
+        $_SESSION['flash_message'] = 'Numero rate aggiornato con successo.';
+        $redirectParams = [
+            'xml_directory' => (string) ($_POST['xml_directory'] ?? ''),
+            'contacts_path' => (string) ($_POST['contacts_path'] ?? ''),
+            'calendar_id' => (string) ($_POST['calendar_id'] ?? ''),
+            'chart_group_by' => (string) ($_POST['chart_group_by'] ?? ''),
+            'client_search' => (string) ($_POST['client_search'] ?? ''),
+            'amount_min' => (string) ($_POST['amount_min'] ?? ''),
+            'amount_max' => (string) ($_POST['amount_max'] ?? ''),
+        ];
+        header('Location: ' . $currentScript . '?' . http_build_query($redirectParams));
+        exit;
     }
 
     $contacts = $contactsRepository->loadFromCsv($contactsPath);
@@ -131,7 +157,11 @@ try {
     $error = $throwable->getMessage();
 }
 
-$filteredDues = array_values(array_filter($dues, static function ($due) use ($clientSearch, $amountMin, $amountMax): bool {
+if ($message === null && $flashMessage !== null) {
+    $message = $flashMessage;
+}
+
+$matchesDueFilters = static function ($due) use ($clientSearch, $amountMin, $amountMax): bool {
     if ($clientSearch !== '') {
         $haystack = mb_strtolower($due->clientName . ' ' . ($due->clientVat ?? '') . ' ' . $due->invoiceNumber);
         if (!str_contains($haystack, mb_strtolower($clientSearch))) {
@@ -151,7 +181,15 @@ $filteredDues = array_values(array_filter($dues, static function ($due) use ($cl
     }
 
     return true;
-}));
+};
+
+$openDues = array_values(array_filter($dues, static fn ($due): bool => !$due->paid && !$due->lawyer));
+$paidDues = array_values(array_filter($dues, static fn ($due): bool => $due->paid && !$due->lawyer));
+$lawyerDues = array_values(array_filter($dues, static fn ($due): bool => $due->lawyer));
+
+$filteredDues = array_values(array_filter($openDues, $matchesDueFilters));
+$filteredPaidDues = array_values(array_filter($paidDues, $matchesDueFilters));
+$filteredLawyerDues = array_values(array_filter($lawyerDues, $matchesDueFilters));
 
 $pieSegments = array_map(
     static fn (array $bucket): array => ['label' => $bucket['label'], 'color' => $bucket['color'], 'value' => (float) $bucket['amount'], 'count' => (int) $bucket['count']],
