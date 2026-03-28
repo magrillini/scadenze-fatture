@@ -14,6 +14,7 @@ session_start();
 
 $storageDirectory = dirname(__DIR__) . '/storage';
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
+$versionFilePath = dirname(__DIR__) . '/VERSION';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 
 $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/storage/xml');
@@ -25,6 +26,14 @@ $amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');
 $amountMax = trim($_POST['amount_max'] ?? $_GET['amount_max'] ?? '');
 $message = null;
 $error = null;
+$appVersion = 'dev';
+$versionContent = @file_get_contents($versionFilePath);
+if ($versionContent !== false) {
+    $parsedVersion = trim($versionContent);
+    if ($parsedVersion !== '') {
+        $appVersion = $parsedVersion;
+    }
+}
 $dues = [];
 $summary = ['total_dues' => 0, 'total_amount' => 0.0, 'collected_amount' => 0.0, 'outstanding_amount' => 0.0, 'legal_amount' => 0.0, 'by_payment_type' => [], 'customers' => [], 'charts' => ['overview' => [], 'by_customer' => []]];
 $paymentRegistry = new PaymentRegistryRepository($paymentRegistryPath);
