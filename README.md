@@ -46,6 +46,21 @@ php -S 127.0.0.1:8080 -t public
 
 Apri poi `http://127.0.0.1:8080`.
 
+## Directory storage (setup automatico)
+
+All'avvio dell'applicazione, il bootstrap crea automaticamente:
+
+- `storage/`
+- `storage/xml/`
+
+se non esistono già.  
+Le impostazioni di default usano:
+
+- XML: `storage/xml`
+- Contatti CSV: `storage/contatti-clienti.csv`
+
+In questo modo non viene più usata la cartella `samples/` come default.
+
 
 ## Area superadmin home
 
