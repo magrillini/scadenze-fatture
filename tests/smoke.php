@@ -8,8 +8,22 @@ use ScadenzeFatture\ContactsRepository;
 use ScadenzeFatture\DashboardService;
 use ScadenzeFatture\InvoiceParser;
 
-$contacts = (new ContactsRepository())->loadFromCsv(dirname(__DIR__) . '/samples/contatti-clienti.csv');
-$dues = (new InvoiceParser())->parseDirectory(dirname(__DIR__) . '/samples/xml', $contacts);
+$root = dirname(__DIR__);
+$contactsPath = $argv[1] ?? ($root . '/storage/contatti-clienti.csv');
+$xmlDirectory = $argv[2] ?? ($root . '/storage/xml');
+
+if (!is_file($contactsPath)) {
+    fwrite(STDERR, "Contatti non trovati: {$contactsPath}\n");
+    exit(1);
+}
+
+if (!is_dir($xmlDirectory)) {
+    fwrite(STDERR, "Directory XML non trovata: {$xmlDirectory}\n");
+    exit(1);
+}
+
+$contacts = (new ContactsRepository())->loadFromCsv($contactsPath);
+$dues = (new InvoiceParser())->parseDirectory($xmlDirectory, $contacts);
 $summary = (new DashboardService())->summarize($dues, []);
 
 echo json_encode([

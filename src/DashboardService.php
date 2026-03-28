@@ -11,7 +11,7 @@ final class DashboardService
      * @param array{due_statuses?:array<string,array{paid:bool,lawyer:bool}>, invoice_overrides?:array<string,array{installments:int}>} $registry
      * @return array<string,mixed>
      */
-    public function summarize(array $dues, array $registry = []): array
+    public function summarize(array $dues, array $registry = [], string $customerGroupBy = 'cliente'): array
     {
         $normalizedDues = $this->normalizeDues($dues, $registry);
         $byPaymentType = [];
@@ -65,7 +65,7 @@ final class DashboardService
                 $legalAmount += $due->amount;
             }
 
-            $customerKey = $due->clientVat ?: $due->clientName;
+            $customerKey = $this->resolveCustomerKey($due, $customerGroupBy);
             if (!isset($customerStats[$customerKey])) {
                 $customerStats[$customerKey] = [
                     'client' => $due->clientName,
@@ -217,5 +217,22 @@ final class DashboardService
         }
 
         return 'future';
+    }
+
+    private function resolveCustomerKey(InvoiceDue $due, string $customerGroupBy): string
+    {
+        if ($customerGroupBy === 'cf') {
+            $vat = trim((string) ($due->clientVat ?? ''));
+            if ($vat !== '') {
+                return 'cf:' . mb_strtolower($vat);
+            }
+        }
+
+        $clientName = trim($due->clientName);
+        if ($clientName !== '') {
+            return 'cliente:' . mb_strtolower($clientName);
+        }
+
+        return 'fallback:' . sha1(implode('|', [$due->invoiceNumber, $due->invoiceDate]));
     }
 }
