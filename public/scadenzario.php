@@ -9,7 +9,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scadenzario generale</title>
+    <title>Registrazione pagamenti</title>
     <style>
         :root { color-scheme: light; --bg: #f3f4f6; --text: #111827; --muted: #6b7280; --card: #ffffff; --primary: #2563eb; --secondary: #059669; --accent: #7c3aed; --warning: #b91c1c; }
         * { box-sizing: border-box; }
@@ -45,17 +45,17 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <div>
             <a class="button" href="index.php">Home</a>
             <a class="button secondary" href="controllo.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Ricerca Cliente</a>
-            <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Scadenzario generale</a>
+            <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Registrazione pagamenti</a>
         </div>
-        <span class="pill">Lettura dedicata dello scadenzario completo</span>
+        <span class="pill">Registrazione pagamenti, invio al legale e modifica delle rate.</span>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
     <?php if ($error): ?><div class="alert error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
 
     <section class="card">
-        <h1>Scadenzario generale</h1>
-        <p class="muted">Pagina dedicata alla consultazione completa delle scadenze, con filtri, stato pagamenti e gestione rate in una vista più leggibile.</p>
+        <h1>Registrazione pagamenti</h1>
+        <p class="muted">Registrazione pagamenti, invio al legale e modifica delle rate.</p>
     </section>
 
     <section class="card">

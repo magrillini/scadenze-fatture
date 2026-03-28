@@ -16,8 +16,8 @@ $storageDirectory = dirname(__DIR__) . '/storage';
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 
-$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/samples/xml');
-$contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/samples/contatti-clienti.csv');
+$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/storage/xml');
+$contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/storage/contatti-clienti.csv');
 $calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
 $clientSearch = trim($_POST['client_search'] ?? $_GET['client_search'] ?? '');

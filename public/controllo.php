@@ -67,7 +67,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <div>
             <a class="button" href="index.php">Home</a>
             <a class="button secondary" href="controllo.php">Ricerca Cliente</a>
-            <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Scadenzario generale</a>
+            <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Registrazione pagamenti</a>
         </div>
         <span class="pill">Monitoraggi dettagliati e filtri operativi</span>
     </div>
@@ -103,10 +103,10 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <section class="card">
         <div class="table-tools">
             <div>
-                <h2>Scadenzario generale su pagina dedicata</h2>
+                <h2>Registrazione pagamenti su pagina dedicata</h2>
                 <p class="muted">Per una lettura più ampia e comoda, lo scadenzario completo è stato spostato in una pagina separata con i relativi filtri.</p>
             </div>
-            <a class="button secondary" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Apri scadenzario generale</a>
+            <a class="button secondary" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Apri Registrazione pagamenti</a>
         </div>
     </section>
 

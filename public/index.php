@@ -74,7 +74,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
     <div class="page-actions">
         <a class="button" href="index.php">Home</a>
         <a class="button secondary" href="controllo.php">Apri Ricerca Cliente</a>
-        <a class="button ghost" href="scadenzario.php">Apri scadenzario</a>
+        <a class="button ghost" href="scadenzario.php">Registrazione pagamenti</a>
         <a class="button ghost" href="?superadmin=1">Area superadmin home</a>
         <?php if (!empty($_SESSION['is_superadmin'])): ?><a class="button ghost" href="?action=superadmin_logout">Logout superadmin</a><?php endif; ?>
     </div>
@@ -95,7 +95,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
             </div>
             <div>
                 <a class="button secondary" href="controllo.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Vai a Ricerca Cliente</a>
-                <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Leggi lo scadenzario generale</a>
+                <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Vai a Registrazione pagamenti</a>
             </div>
             <?php if ($selectedHomeVariant['images'] !== []): ?><div class="home-gallery layout-<?= (int) $selectedHomeVariant['layout'] ?>"><?php foreach ($selectedHomeVariant['images'] as $image): ?><figure class="home-photo"><img src="<?= htmlspecialchars($image['path']) ?>?v=<?= urlencode((string) ($image['updated_at'] ?? '1')) ?>" alt="<?= htmlspecialchars($image['title']) ?>"><figcaption><strong><?= htmlspecialchars($image['title']) ?></strong><span><?= htmlspecialchars($image['caption']) ?></span></figcaption></figure><?php endforeach; ?></div><?php else: ?><div class="home-empty"><strong>Nessuna foto configurata.</strong><p>Apri l'area superadmin per caricare da 1 a 5 immagini e attivare i layout casuali della home.</p></div><?php endif; ?>
         </div>
