@@ -225,6 +225,8 @@ function bindThreeCharFilter(config) {
         inputElement.value = '';
         showRows('', true);
     });
+
+    showRows('', false);
 }
 
 bindThreeCharFilter({
