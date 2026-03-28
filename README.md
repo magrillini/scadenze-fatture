@@ -46,6 +46,10 @@ php -S 127.0.0.1:8080 -t public
 
 Apri poi `http://127.0.0.1:8080`.
 
+## Versione applicazione
+
+La versione attiva è nel file `VERSION` (es. `1.1.0`) ed è mostrata anche in interfaccia.
+
 
 ## Area superadmin home
 
@@ -102,4 +106,5 @@ I dati operativi vengono salvati in `storage/payment-registry.json`.
 - `src/DashboardService.php`: aggregazioni per lo scadenzario.
 - `src/GoogleCalendarService.php`: integrazione API Google Calendar.
 - `samples/`: esempi pronti per test rapidi.
-- `tests/smoke.php`: smoke test CLI.
+- `tests/smoke.php`: smoke test CLI (usa `storage/` di default).
+- `tests/version.php`: verifica formato e presenza versione applicativa.

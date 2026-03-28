@@ -69,7 +69,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
             <a class="button secondary" href="controllo.php">Ricerca Cliente</a>
             <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Registrazione pagamenti</a>
         </div>
-        <span class="pill">Monitoraggi dettagliati e filtri operativi</span>
+        <span class="pill">Monitoraggi dettagliati e filtri operativi · v<?= htmlspecialchars($appVersion) ?></span>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
