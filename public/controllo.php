@@ -36,6 +36,12 @@ require __DIR__ . '/dashboard-bootstrap.php';
         .bar-row { display: grid; grid-template-columns: minmax(140px, 240px) 1fr auto; gap: 12px; align-items: center; }
         .bar-track { background: #e5e7eb; border-radius: 999px; overflow: hidden; min-height: 14px; }
         .bar-fill { min-height: 14px; border-radius: 999px; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+        .bar-stack { display: flex; width: 100%; min-height: 14px; border-radius: 999px; overflow: hidden; }
+        .segment-far { background: #2563eb; }
+        .segment-near { background: #f97316; }
+        .segment-paid { background: #16a34a; }
+        details.customer-breakdown { border: 1px solid #e5e7eb; border-radius: 10px; padding: 8px 10px; margin-top: 8px; background: #f9fafb; }
+        details.customer-breakdown > summary { cursor: pointer; font-weight: 700; }
         .stars { color: #f59e0b; font-size: 1.15rem; letter-spacing: 1px; }
         .status-paid { color: #166534; font-weight: 700; }
         .status-open { color: #92400e; font-weight: 700; }
@@ -69,7 +75,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
             <a class="button secondary" href="controllo.php">Ricerca Cliente</a>
             <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Registrazione pagamenti</a>
         </div>
-        <span class="pill">Monitoraggi dettagliati e filtri operativi</span>
+        <span class="pill">Monitoraggi dettagliati e filtri operativi · v<?= htmlspecialchars($appVersion) ?></span>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
@@ -96,9 +102,54 @@ require __DIR__ . '/dashboard-bootstrap.php';
 
     <section class="card"><form method="post"><div class="grid"><div><label for="xml_directory">Directory fatture XML</label><input id="xml_directory" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"></div><div><label for="contacts_path">File contatti CSV</label><input id="contacts_path" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"></div><div><label for="calendar_id">Google Calendar ID</label><input id="calendar_id" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"></div><div><label for="chart_group_by">Grafici raggruppati per</label><select id="chart_group_by" name="chart_group_by"><option value="cliente" <?= $chartGroupBy === 'cliente' ? 'selected' : '' ?>>Cliente</option><option value="cf" <?= $chartGroupBy === 'cf' ? 'selected' : '' ?>>CF / P.IVA</option></select></div></div><p style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap;"><button type="submit">Aggiorna scadenzario</button><a class="button secondary" href="?action=connect_google&amp;xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>">Collega Google Calendar</a><button class="secondary" type="submit" name="action" value="push_google">Invia scadenze a Google</button></p></form></section>
 
-    <section class="card"><h2>Grafico clienti / CF</h2><p class="muted">Ordinato per grandezza di cifra e raggruppato per <?= $chartGroupBy === 'cf' ? 'codice fiscale / partita IVA' : 'cliente' ?>.</p><div class="section-toolbar"><div class="search-input-wrap"><span class="search-icon" aria-hidden="true">🔍</span><input id="customer_chart_search" type="search" autocomplete="off" placeholder="Cerca nel grafico (minimo 3 caratteri)"></div><button type="button" class="button all-customers" id="customer_chart_show_all">VEDI TUTTI</button></div><p class="muted" id="customer_chart_hint">Digita almeno 3 caratteri per filtrare il grafico clienti/CF.</p><div class="chart"><?php $customersMax = 0.0; foreach ($summary['customers'] as $customer) { $customersMax = max($customersMax, (float) $customer['turnover']); } foreach ($summary['customers'] as $customer): $label = $chartGroupBy === 'cf' ? ($customer['cf'] ?: '-') : $customer['client']; $searchKey = mb_strtolower(trim((string) ($customer['client'] ?? '')) . ' ' . trim((string) ($customer['cf'] ?? ''))); ?><div class="bar-row customer-chart-row" data-search="<?= htmlspecialchars($searchKey) ?>"><div><strong><?= htmlspecialchars($label) ?></strong><br><span class="muted"><?= htmlspecialchars($customer['client']) ?></span> — <span class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></span></div><div class="bar-track"><div class="bar-fill" style="width: <?= number_format(percentOf((float) $customer['turnover'], $customersMax), 2, '.', '') ?>%;"></div></div><span class="amount"><?= euro((float) $customer['turnover']) ?></span></div><?php endforeach; ?></div></section>
+    <section class="card">
+        <h2>Grafico clienti / CF</h2>
+        <p class="muted">Blu: da pagare oltre 15 giorni. Arancione: da pagare entro 15 giorni. Verde: pagato. Totale riga = anno in corso.</p>
+        <div class="section-toolbar">
+            <div class="search-input-wrap"><span class="search-icon" aria-hidden="true">🔍</span><input id="customer_chart_search" type="search" autocomplete="off" placeholder="Cerca nel grafico (minimo 3 caratteri)"></div>
+            <button type="button" class="button all-customers" id="customer_chart_show_all">VEDI TUTTI</button>
+        </div>
+        <p class="muted" id="customer_chart_hint">Grafico compattato: digita almeno 3 caratteri o premi VEDI TUTTI.</p>
+        <div class="chart">
+            <?php foreach ($summary['customers'] as $customer):
+                $label = $chartGroupBy === 'cf' ? ($customer['cf'] ?: '-') : $customer['client'];
+                $searchKey = mb_strtolower(trim((string) ($customer['client'] ?? '')) . ' ' . trim((string) ($customer['cf'] ?? '')));
+                $yearTotal = (float) ($customer['year_total'] ?? 0.0);
+                $farDue = (float) ($customer['far_due_current_year'] ?? 0.0);
+                $nearDue = (float) ($customer['near_due_current_year'] ?? 0.0);
+                $paidAmount = (float) ($customer['paid_current_year'] ?? 0.0);
+                $items = (array) ($customer['year_items'] ?? []);
+            ?>
+                <div class="customer-chart-row" data-search="<?= htmlspecialchars($searchKey) ?>">
+                    <div class="bar-row">
+                        <div><strong><?= htmlspecialchars($label) ?></strong><br><span class="muted"><?= htmlspecialchars($customer['client']) ?></span> — <span class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></span></div>
+                        <div class="bar-track"><div class="bar-stack"><div class="segment-far" style="width: <?= number_format(percentOf($farDue, max($yearTotal, 0.01)), 2, '.', '') ?>%;"></div><div class="segment-near" style="width: <?= number_format(percentOf($nearDue, max($yearTotal, 0.01)), 2, '.', '') ?>%;"></div><div class="segment-paid" style="width: <?= number_format(percentOf($paidAmount, max($yearTotal, 0.01)), 2, '.', '') ?>%;"></div></div></div>
+                        <span class="amount"><?= euro($yearTotal) ?></span>
+                    </div>
+                    <details class="customer-breakdown">
+                        <summary>Esplodi dettaglio fatture (<?= count($items) ?>)</summary>
+                        <table>
+                            <thead><tr><th>Fattura</th><th>Scadenza</th><th>Stato</th><th>Fascia</th><th>Importo</th></tr></thead>
+                            <tbody>
+                            <?php foreach ($items as $item): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars((string) ($item['invoice_number'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string) ($item['due_date'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string) ($item['status'] ?? '-')) ?></td>
+                                    <td><?= htmlspecialchars((string) (($item['timeline_bucket'] ?? '') === 'paid' ? 'Pagato' : (($item['timeline_bucket'] ?? '') === 'near_due' ? 'Entro 15gg' : 'Oltre 15gg'))) ?></td>
+                                    <td class="amount"><?= euro((float) ($item['amount'] ?? 0.0)) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                            <?php if ($items === []): ?><tr><td colspan="5" class="muted">Nessuna fattura dell'anno in corso.</td></tr><?php endif; ?>
+                            </tbody>
+                        </table>
+                    </details>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
 
-    <section class="card"><h2>Rating clienti</h2><div class="section-toolbar"><div class="search-input-wrap"><span class="search-icon" aria-hidden="true">🔍</span><input id="customer_rating_search" type="search" autocomplete="off" placeholder="Cerca nel rating clienti (minimo 3 caratteri)"></div><button type="button" class="button all-customers" id="customer_rating_show_all">VEDI TUTTI</button></div><p class="muted" id="customer_rating_hint">Digita almeno 3 caratteri per filtrare la tabella rating.</p><table><thead><tr><th>Cliente</th><th>CF / P.IVA</th><th>Stelle</th><th>Fatturato</th><th>Riscosso</th><th>Da riscuotere</th><th>Legale</th></tr></thead><tbody><?php foreach ($summary['customers'] as $customer): $searchKey = mb_strtolower(trim((string) ($customer['client'] ?? '')) . ' ' . trim((string) ($customer['cf'] ?? ''))); ?><tr class="customer-rating-row" data-search="<?= htmlspecialchars($searchKey) ?>"><td><?= htmlspecialchars($customer['client']) ?></td><td><?= htmlspecialchars($customer['cf']) ?></td><td class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></td><td class="amount"><?= euro((float) $customer['turnover']) ?></td><td class="amount"><?= euro((float) $customer['collected']) ?></td><td class="amount"><?= euro((float) $customer['outstanding']) ?></td><td class="amount"><?= euro((float) $customer['legal']) ?></td></tr><?php endforeach; ?></tbody></table></section>
+    <section class="card"><h2>Rating clienti</h2><div class="section-toolbar"><div class="search-input-wrap"><span class="search-icon" aria-hidden="true">🔍</span><input id="customer_rating_search" type="search" autocomplete="off" placeholder="Cerca nel rating clienti (minimo 3 caratteri)"></div><button type="button" class="button all-customers" id="customer_rating_show_all">VEDI TUTTI</button></div><p class="muted" id="customer_rating_hint">Rating compattato: digita almeno 3 caratteri o premi VEDI TUTTI.</p><table><thead><tr><th>Cliente</th><th>CF / P.IVA</th><th>Stelle</th><th>Fatturato</th><th>Riscosso</th><th>Da riscuotere</th><th>Legale</th></tr></thead><tbody><?php foreach ($summary['customers'] as $customer): $searchKey = mb_strtolower(trim((string) ($customer['client'] ?? '')) . ' ' . trim((string) ($customer['cf'] ?? ''))); ?><tr class="customer-rating-row" data-search="<?= htmlspecialchars($searchKey) ?>"><td><?= htmlspecialchars($customer['client']) ?></td><td><?= htmlspecialchars($customer['cf']) ?></td><td class="stars"><?= htmlspecialchars(renderStars((int) $customer['stars'])) ?></td><td class="amount"><?= euro((float) $customer['turnover']) ?></td><td class="amount"><?= euro((float) $customer['collected']) ?></td><td class="amount"><?= euro((float) $customer['outstanding']) ?></td><td class="amount"><?= euro((float) $customer['legal']) ?></td></tr><?php endforeach; ?></tbody></table></section>
 
     <section class="card">
         <div class="table-tools">
@@ -192,10 +243,17 @@ function bindThreeCharFilter(config) {
         return;
     }
 
+    const startHidden = Boolean(config.startHidden);
+    const minCharsMessage = config.minCharsMessage || 'Digita almeno 3 caratteri per filtrare.';
+
     const showRows = (term, allowAll = false) => {
         if (!allowAll && term.length < 3) {
-            rows.forEach((row) => row.classList.remove('hidden-row'));
-            hintElement.textContent = 'Digita almeno 3 caratteri per filtrare.';
+            if (startHidden) {
+                rows.forEach((row) => row.classList.add('hidden-row'));
+            } else {
+                rows.forEach((row) => row.classList.remove('hidden-row'));
+            }
+            hintElement.textContent = minCharsMessage;
             return;
         }
 
@@ -218,20 +276,26 @@ function bindThreeCharFilter(config) {
         inputElement.value = '';
         showRows('', true);
     });
+
+    showRows('', false);
 }
 
 bindThreeCharFilter({
     inputId: 'customer_chart_search',
     showAllId: 'customer_chart_show_all',
     hintId: 'customer_chart_hint',
-    rowSelector: '.customer-chart-row'
+    rowSelector: '.customer-chart-row',
+    startHidden: true,
+    minCharsMessage: 'Grafico compattato: digita almeno 3 caratteri o premi VEDI TUTTI.'
 });
 
 bindThreeCharFilter({
     inputId: 'customer_rating_search',
     showAllId: 'customer_rating_show_all',
     hintId: 'customer_rating_hint',
-    rowSelector: '.customer-rating-row'
+    rowSelector: '.customer-rating-row',
+    startHidden: true,
+    minCharsMessage: 'Rating compattato: digita almeno 3 caratteri o premi VEDI TUTTI.'
 });
 </script>
 </body>

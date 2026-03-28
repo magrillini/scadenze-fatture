@@ -78,7 +78,7 @@ try {
 
     $contacts = $contactsRepository->loadFromCsv($contactsPath);
     $rawDues = $parser->parseDirectory($xmlDirectory, $contacts);
-    $summary = $dashboard->summarize($rawDues, $paymentRegistry->load());
+    $summary = $dashboard->summarize($rawDues, $paymentRegistry->load(), $chartGroupBy);
     $dues = $summary['dues'];
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'push_google') {

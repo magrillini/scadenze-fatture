@@ -11,7 +11,7 @@ final class DashboardService
      * @param array{due_statuses?:array<string,array{paid:bool,lawyer:bool}>, invoice_overrides?:array<string,array{installments:int}>} $registry
      * @return array<string,mixed>
      */
-    public function summarize(array $dues, array $registry = []): array
+    public function summarize(array $dues, array $registry = [], string $customerGroupBy = 'cliente'): array
     {
         $normalizedDues = $this->normalizeDues($dues, $registry);
         $byPaymentType = [];
@@ -19,6 +19,7 @@ final class DashboardService
         $collectedAmount = 0.0;
         $legalAmount = 0.0;
         $today = date('Y-m-d');
+        $currentYear = date('Y');
         $customerStats = [];
         $agingBuckets = [
             'overdue_unpaid' => [
@@ -65,7 +66,7 @@ final class DashboardService
                 $legalAmount += $due->amount;
             }
 
-            $customerKey = $due->clientVat ?: $due->clientName;
+            $customerKey = $this->resolveCustomerKey($due, $customerGroupBy);
             if (!isset($customerStats[$customerKey])) {
                 $customerStats[$customerKey] = [
                     'client' => $due->clientName,
@@ -75,6 +76,11 @@ final class DashboardService
                     'outstanding' => 0.0,
                     'legal' => 0.0,
                     'overdue_unpaid' => 0,
+                    'year_total' => 0.0,
+                    'paid_current_year' => 0.0,
+                    'near_due_current_year' => 0.0,
+                    'far_due_current_year' => 0.0,
+                    'year_items' => [],
                 ];
             }
 
@@ -84,6 +90,27 @@ final class DashboardService
             $customerStats[$customerKey]['legal'] += $due->lawyer ? $due->amount : 0.0;
             if (!$due->paid && $due->dueDate < $today) {
                 $customerStats[$customerKey]['overdue_unpaid']++;
+            }
+
+            $dueYear = date('Y', strtotime($due->dueDate) ?: time());
+            if ($dueYear === $currentYear) {
+                $customerStats[$customerKey]['year_total'] += $due->amount;
+                $timelineBucket = $this->resolveCustomerTimelineBucket($due, $today);
+                if ($timelineBucket === 'paid') {
+                    $customerStats[$customerKey]['paid_current_year'] += $due->amount;
+                } elseif ($timelineBucket === 'near_due') {
+                    $customerStats[$customerKey]['near_due_current_year'] += $due->amount;
+                } else {
+                    $customerStats[$customerKey]['far_due_current_year'] += $due->amount;
+                }
+
+                $customerStats[$customerKey]['year_items'][] = [
+                    'invoice_number' => $due->invoiceNumber,
+                    'due_date' => $due->dueDate,
+                    'amount' => $due->amount,
+                    'status' => $due->paid ? 'Pagata' : 'Da pagare',
+                    'timeline_bucket' => $timelineBucket,
+                ];
             }
 
             $agingKey = $this->resolveAgingBucket($due, $today);
@@ -217,5 +244,38 @@ final class DashboardService
         }
 
         return 'future';
+    }
+
+    private function resolveCustomerKey(InvoiceDue $due, string $customerGroupBy): string
+    {
+        if ($customerGroupBy === 'cf') {
+            $vat = trim((string) ($due->clientVat ?? ''));
+            if ($vat !== '') {
+                return 'cf:' . mb_strtolower($vat);
+            }
+        }
+
+        $clientName = trim($due->clientName);
+        if ($clientName !== '') {
+            return 'cliente:' . mb_strtolower($clientName);
+        }
+
+        return 'fallback:' . sha1(implode('|', [$due->invoiceNumber, $due->invoiceDate]));
+    }
+
+    private function resolveCustomerTimelineBucket(InvoiceDue $due, string $today): string
+    {
+        if ($due->paid) {
+            return 'paid';
+        }
+
+        $dueTimestamp = strtotime($due->dueDate);
+        $todayTimestamp = strtotime($today);
+        if ($dueTimestamp === false || $todayTimestamp === false) {
+            return 'far_due';
+        }
+
+        $daysUntilDue = (int) floor(($dueTimestamp - $todayTimestamp) / 86400);
+        return $daysUntilDue <= 15 ? 'near_due' : 'far_due';
     }
 }
