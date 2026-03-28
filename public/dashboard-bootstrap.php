@@ -13,10 +13,19 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 session_start();
 
 $storageDirectory = dirname(__DIR__) . '/storage';
+$storageXmlDirectory = $storageDirectory . '/xml';
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 
-$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/storage/xml');
+if (!is_dir($storageDirectory) && !mkdir($storageDirectory, 0775, true) && !is_dir($storageDirectory)) {
+    throw new RuntimeException('Impossibile creare la directory storage: ' . $storageDirectory);
+}
+
+if (!is_dir($storageXmlDirectory) && !mkdir($storageXmlDirectory, 0775, true) && !is_dir($storageXmlDirectory)) {
+    throw new RuntimeException('Impossibile creare la directory XML in storage: ' . $storageXmlDirectory);
+}
+
+$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? $storageXmlDirectory);
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/storage/contatti-clienti.csv');
 $calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
