@@ -25,11 +25,13 @@ if (!is_dir($defaultXmlDirectory)) {
 
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $versionFilePath = dirname(__DIR__) . '/VERSION';
+$buildVersionFilePath = dirname(__DIR__) . '/build-version.txt';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
+$defaultCalendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com';
 
 $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? $defaultXmlDirectory);
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/storage/contatti-clienti.csv');
-$calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
+$calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? $defaultCalendarId);
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
 $clientSearch = trim($_POST['client_search'] ?? $_GET['client_search'] ?? '');
 $amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');
@@ -43,6 +45,30 @@ if ($versionContent !== false) {
     $parsedVersion = trim($versionContent);
     if ($parsedVersion !== '') {
         $appVersion = $parsedVersion;
+    }
+}
+
+$envBuildVersion = trim((string) ($_SERVER['APP_BUILD_VERSION'] ?? getenv('APP_BUILD_VERSION') ?: ''));
+if ($envBuildVersion !== '') {
+    $appVersion = $envBuildVersion;
+} else {
+    $buildVersionContent = @file_get_contents($buildVersionFilePath);
+    if ($buildVersionContent !== false) {
+        $parsedBuildVersion = trim($buildVersionContent);
+        if ($parsedBuildVersion !== '') {
+            $appVersion = $parsedBuildVersion;
+        }
+    } else {
+        $prNumber = trim((string) ($_SERVER['PR_NUMBER'] ?? getenv('PR_NUMBER') ?: ''));
+        if ($prNumber === '') {
+            $githubRef = (string) ($_SERVER['GITHUB_REF'] ?? getenv('GITHUB_REF') ?: '');
+            if (preg_match('#refs/pull/(\d+)/#', $githubRef, $matches) === 1) {
+                $prNumber = (string) $matches[1];
+            }
+        }
+        if ($prNumber !== '' && preg_match('/^\d+$/', $prNumber)) {
+            $appVersion .= '-pr' . $prNumber;
+        }
     }
 }
 $dues = [];
@@ -67,16 +93,59 @@ $redirectUri = sprintf(
 try {
     if (isset($_GET['action']) && $_GET['action'] === 'connect_google') {
         if (!$googleService->isConfigured()) {
-            throw new RuntimeException('Config Google mancante: crea config/google-calendar.local.json partendo dal file example.');
+            throw new RuntimeException('Configurazione Google mancante o non valida: crea/controlla config/google-calendar.local.json con client_id e client_secret.');
         }
 
-        header('Location: ' . $googleService->getAuthUrl($redirectUri));
+        $oauthStatePayload = [
+            'xml_directory' => $xmlDirectory,
+            'contacts_path' => $contactsPath,
+            'calendar_id' => $calendarId,
+            'chart_group_by' => $chartGroupBy,
+            'client_search' => $clientSearch,
+            'amount_min' => $amountMin,
+            'amount_max' => $amountMax,
+        ];
+        $oauthState = rtrim(strtr(base64_encode(json_encode($oauthStatePayload, JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+        header('Location: ' . $googleService->getAuthUrl($redirectUri, $oauthState));
         exit;
     }
 
     if (isset($_GET['action']) && $_GET['action'] === 'oauth_callback' && isset($_GET['code'])) {
         $googleService->fetchAndStoreAccessToken((string) $_GET['code'], $redirectUri);
-        $message = 'Google Calendar collegato correttamente.';
+        $_SESSION['flash_success'] = 'Google Calendar collegato correttamente.';
+
+        $redirectParams = ['calendar_id' => $calendarId];
+        if (isset($_GET['state'])) {
+            $rawState = (string) $_GET['state'];
+            $normalizedState = strtr($rawState, '-_', '+/');
+            $padding = strlen($normalizedState) % 4;
+            if ($padding > 0) {
+                $normalizedState .= str_repeat('=', 4 - $padding);
+            }
+            $decodedState = base64_decode($normalizedState, true);
+            if ($decodedState !== false) {
+                $statePayload = json_decode($decodedState, true);
+                if (is_array($statePayload)) {
+                    $redirectParams = array_merge($redirectParams, array_filter([
+                        'xml_directory' => isset($statePayload['xml_directory']) ? (string) $statePayload['xml_directory'] : null,
+                        'contacts_path' => isset($statePayload['contacts_path']) ? (string) $statePayload['contacts_path'] : null,
+                        'calendar_id' => isset($statePayload['calendar_id']) ? (string) $statePayload['calendar_id'] : null,
+                        'chart_group_by' => isset($statePayload['chart_group_by']) ? (string) $statePayload['chart_group_by'] : null,
+                        'client_search' => isset($statePayload['client_search']) ? (string) $statePayload['client_search'] : null,
+                        'amount_min' => isset($statePayload['amount_min']) ? (string) $statePayload['amount_min'] : null,
+                        'amount_max' => isset($statePayload['amount_max']) ? (string) $statePayload['amount_max'] : null,
+                    ], static fn ($value): bool => $value !== null));
+                }
+            }
+        }
+
+        header('Location: ' . $currentScript . '?' . http_build_query($redirectParams));
+        exit;
+    }
+
+    if (isset($_SESSION['flash_success'])) {
+        $message = (string) $_SESSION['flash_success'];
+        unset($_SESSION['flash_success']);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_due_status') {
@@ -193,4 +262,3 @@ function buildPieGradient(array $segments): string
 
     return 'conic-gradient(' . implode(', ', $parts) . ')';
 }
-
