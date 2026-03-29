@@ -67,16 +67,59 @@ $redirectUri = sprintf(
 try {
     if (isset($_GET['action']) && $_GET['action'] === 'connect_google') {
         if (!$googleService->isConfigured()) {
-            throw new RuntimeException('Config Google mancante: crea config/google-calendar.local.json partendo dal file example.');
+            throw new RuntimeException('Configurazione Google mancante o non valida: crea/controlla config/google-calendar.local.json con client_id e client_secret.');
         }
 
-        header('Location: ' . $googleService->getAuthUrl($redirectUri));
+        $oauthStatePayload = [
+            'xml_directory' => $xmlDirectory,
+            'contacts_path' => $contactsPath,
+            'calendar_id' => $calendarId,
+            'chart_group_by' => $chartGroupBy,
+            'client_search' => $clientSearch,
+            'amount_min' => $amountMin,
+            'amount_max' => $amountMax,
+        ];
+        $oauthState = rtrim(strtr(base64_encode(json_encode($oauthStatePayload, JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+        header('Location: ' . $googleService->getAuthUrl($redirectUri, $oauthState));
         exit;
     }
 
     if (isset($_GET['action']) && $_GET['action'] === 'oauth_callback' && isset($_GET['code'])) {
         $googleService->fetchAndStoreAccessToken((string) $_GET['code'], $redirectUri);
-        $message = 'Google Calendar collegato correttamente.';
+        $_SESSION['flash_success'] = 'Google Calendar collegato correttamente.';
+
+        $redirectParams = ['calendar_id' => $calendarId];
+        if (isset($_GET['state'])) {
+            $rawState = (string) $_GET['state'];
+            $normalizedState = strtr($rawState, '-_', '+/');
+            $padding = strlen($normalizedState) % 4;
+            if ($padding > 0) {
+                $normalizedState .= str_repeat('=', 4 - $padding);
+            }
+            $decodedState = base64_decode($normalizedState, true);
+            if ($decodedState !== false) {
+                $statePayload = json_decode($decodedState, true);
+                if (is_array($statePayload)) {
+                    $redirectParams = array_merge($redirectParams, array_filter([
+                        'xml_directory' => isset($statePayload['xml_directory']) ? (string) $statePayload['xml_directory'] : null,
+                        'contacts_path' => isset($statePayload['contacts_path']) ? (string) $statePayload['contacts_path'] : null,
+                        'calendar_id' => isset($statePayload['calendar_id']) ? (string) $statePayload['calendar_id'] : null,
+                        'chart_group_by' => isset($statePayload['chart_group_by']) ? (string) $statePayload['chart_group_by'] : null,
+                        'client_search' => isset($statePayload['client_search']) ? (string) $statePayload['client_search'] : null,
+                        'amount_min' => isset($statePayload['amount_min']) ? (string) $statePayload['amount_min'] : null,
+                        'amount_max' => isset($statePayload['amount_max']) ? (string) $statePayload['amount_max'] : null,
+                    ], static fn ($value): bool => $value !== null));
+                }
+            }
+        }
+
+        header('Location: ' . $currentScript . '?' . http_build_query($redirectParams));
+        exit;
+    }
+
+    if (isset($_SESSION['flash_success'])) {
+        $message = (string) $_SESSION['flash_success'];
+        unset($_SESSION['flash_success']);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_due_status') {
@@ -193,4 +236,3 @@ function buildPieGradient(array $segments): string
 
     return 'conic-gradient(' . implode(', ', $parts) . ')';
 }
-
