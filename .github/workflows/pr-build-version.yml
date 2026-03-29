@@ -1,0 +1,33 @@
+name: PR Build Version
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build-version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Generate PR build version
+        run: php scripts/build-pr-version.php "${{ github.event.pull_request.number }}" build-version.txt
+
+      - name: Expose build version
+        run: |
+          echo "PR build version: $(cat build-version.txt)" >> "$GITHUB_STEP_SUMMARY"
+          echo "build_version=$(cat build-version.txt)" >> "$GITHUB_OUTPUT"
+        id: version
+
+      - name: Upload build version artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-build-version
+          path: build-version.txt

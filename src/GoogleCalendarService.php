@@ -8,10 +8,14 @@ use RuntimeException;
 
 final class GoogleCalendarService
 {
+    private readonly string $sentIndexPath;
+
     public function __construct(
         private readonly string $configPath,
         private readonly string $tokenPath,
+        ?string $sentIndexPath = null,
     ) {
+        $this->sentIndexPath = $sentIndexPath ?? dirname($this->tokenPath) . '/google-sent-events.json';
     }
 
     public function isConfigured(): bool
@@ -19,19 +23,22 @@ final class GoogleCalendarService
         return is_file($this->configPath);
     }
 
-    public function getAuthUrl(string $redirectUri): string
+    public function getAuthUrl(string $redirectUri, ?string $state = null): string
     {
         $config = $this->loadConfig();
-        $params = http_build_query([
+        $params = [
             'client_id' => $config['client_id'],
             'redirect_uri' => $redirectUri,
             'response_type' => 'code',
             'scope' => 'https://www.googleapis.com/auth/calendar.events',
             'access_type' => 'offline',
             'prompt' => 'consent',
-        ]);
+        ];
+        if ($state !== null && $state !== '') {
+            $params['state'] = $state;
+        }
 
-        return 'https://accounts.google.com/o/oauth2/v2/auth?' . $params;
+        return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
     }
 
     public function fetchAndStoreAccessToken(string $code, string $redirectUri): void
@@ -46,19 +53,31 @@ final class GoogleCalendarService
         ]);
 
         if (isset($response['error'])) {
-            throw new RuntimeException('Errore OAuth Google: ' . (is_array($response['error']) ? json_encode($response['error']) : $response['error']));
+            $errorCode = is_array($response['error']) ? (string) ($response['error']['status'] ?? 'oauth_error') : (string) $response['error'];
+            $errorDescription = (string) ($response['error_description'] ?? '');
+            if (str_contains($errorCode, 'invalid_grant') || str_contains($errorDescription, 'invalid_grant')) {
+                throw new RuntimeException('Token Google non valido o scaduto (invalid_grant). Ricollega Google Calendar.');
+            }
+            throw new RuntimeException('Errore OAuth Google: ' . ($errorDescription !== '' ? $errorDescription : $errorCode));
         }
 
+        $response['created_at'] = time();
         file_put_contents($this->tokenPath, json_encode($response, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /** @param InvoiceDue[] $dues */
-    public function pushEvents(array $dues, string $calendarId = 'primary'): int
+    public function pushEvents(array $dues, string $calendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com'): int
     {
         $token = $this->getValidToken();
+        $sentIndex = $this->loadSentIndex();
         $inserted = 0;
 
         foreach ($dues as $due) {
+            $dueKey = $this->buildSentDueKey($due, $calendarId);
+            if (isset($sentIndex[$dueKey])) {
+                continue;
+            }
+
             $payload = [
                 'summary' => $due->toCalendarSummary(),
                 'description' => $due->toCalendarDescription(),
@@ -71,10 +90,45 @@ final class GoogleCalendarService
                 rawurlencode($calendarId)
             );
             $this->postJson($url, $payload, $token['access_token']);
+            $sentIndex[$dueKey] = [
+                'calendar_id' => $calendarId,
+                'invoice_number' => $due->invoiceNumber,
+                'due_date' => $due->dueDate,
+                'sent_at' => time(),
+            ];
             $inserted++;
         }
 
+        $this->saveSentIndex($sentIndex);
+
         return $inserted;
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    private function loadSentIndex(): array
+    {
+        if (!is_file($this->sentIndexPath)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($this->sentIndexPath), true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /** @param array<string,array<string,mixed>> $sentIndex */
+    private function saveSentIndex(array $sentIndex): void
+    {
+        $directory = dirname($this->sentIndexPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0775, true);
+        }
+
+        file_put_contents($this->sentIndexPath, json_encode($sentIndex, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function buildSentDueKey(InvoiceDue $due, string $calendarId): string
+    {
+        return sha1($calendarId . '|' . trim($due->invoiceNumber) . '|' . trim($due->dueDate));
     }
 
     private function getValidToken(): array
@@ -84,7 +138,10 @@ final class GoogleCalendarService
         }
 
         $token = json_decode((string) file_get_contents($this->tokenPath), true, 512, JSON_THROW_ON_ERROR);
-        $created = filemtime($this->tokenPath) ?: time();
+        if (empty($token['access_token'])) {
+            throw new RuntimeException('Token Google non valido: access_token assente. Ricollega Google Calendar.');
+        }
+        $created = isset($token['created_at']) ? (int) $token['created_at'] : (filemtime($this->tokenPath) ?: time());
         $expiresIn = (int) ($token['expires_in'] ?? 0);
         $isExpired = $expiresIn > 0 && (time() >= ($created + $expiresIn - 60));
 
@@ -103,8 +160,17 @@ final class GoogleCalendarService
             'refresh_token' => $token['refresh_token'],
             'grant_type' => 'refresh_token',
         ]);
+        if (isset($refreshed['error'])) {
+            $errorCode = is_array($refreshed['error']) ? (string) ($refreshed['error']['status'] ?? 'oauth_error') : (string) $refreshed['error'];
+            $errorDescription = (string) ($refreshed['error_description'] ?? '');
+            if (str_contains($errorCode, 'invalid_grant') || str_contains($errorDescription, 'invalid_grant')) {
+                throw new RuntimeException('Token Google non valido o revocato (invalid_grant). Ricollega Google Calendar.');
+            }
+            throw new RuntimeException('Errore refresh token Google: ' . ($errorDescription !== '' ? $errorDescription : $errorCode));
+        }
 
         $merged = array_merge($token, $refreshed);
+        $merged['created_at'] = time();
         file_put_contents($this->tokenPath, json_encode($merged, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
         return $merged;
@@ -113,10 +179,15 @@ final class GoogleCalendarService
     private function loadConfig(): array
     {
         if (!is_file($this->configPath)) {
-            throw new RuntimeException('Config Google mancante: copia config/google-calendar.local.json.example');
+            throw new RuntimeException('Configurazione Google mancante o non valida: copia config/google-calendar.local.json.example e inserisci client_id/client_secret.');
         }
 
-        return json_decode((string) file_get_contents($this->configPath), true, 512, JSON_THROW_ON_ERROR);
+        $config = json_decode((string) file_get_contents($this->configPath), true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($config) || empty($config['client_id']) || empty($config['client_secret'])) {
+            throw new RuntimeException('Configurazione Google non valida: sono richiesti client_id e client_secret in config/google-calendar.local.json.');
+        }
+
+        return $config;
     }
 
     private function postForm(string $url, array $payload): array
@@ -161,10 +232,12 @@ final class GoogleCalendarService
 
         if ($status >= 400) {
             $message = $decoded['error']['message'] ?? $decoded['error'] ?? $response;
+            if (is_string($message) && str_contains($message, 'invalid_grant')) {
+                throw new RuntimeException('Token Google non valido o revocato (invalid_grant). Ricollega Google Calendar.');
+            }
             throw new RuntimeException('Google API HTTP ' . $status . ': ' . $message);
         }
 
         return is_array($decoded) ? $decoded : [];
     }
 }
-

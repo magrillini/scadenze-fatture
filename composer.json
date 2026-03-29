@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "version:bump": "php scripts/bump-version.php"
+    "version:bump": "php scripts/bump-version.php",
+    "version:pr-build": "php scripts/build-pr-version.php"
   }
 }
-
