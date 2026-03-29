@@ -36,6 +36,7 @@ $amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');
 $amountMax = trim($_POST['amount_max'] ?? $_GET['amount_max'] ?? '');
 $message = null;
 $error = null;
+$focusRowId = null;
 $appVersion = 'dev';
 $versionContent = @file_get_contents($versionFilePath);
 if ($versionContent !== false) {
@@ -85,6 +86,7 @@ try {
             isset($_POST['avvocato'])
         );
         $message = 'Stato pagamento aggiornato.';
+        $focusRowId = trim((string) ($_POST['focus_row_id'] ?? ''));
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_installments') {
@@ -93,6 +95,7 @@ try {
             max(1, (int) ($_POST['numero_rate'] ?? 1))
         );
         $message = 'Numero rate aggiornato con successo.';
+        $focusRowId = trim((string) ($_POST['focus_row_id'] ?? ''));
     }
 
     $contacts = $contactsRepository->loadFromCsv($contactsPath);
