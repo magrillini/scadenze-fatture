@@ -60,6 +60,22 @@ Comando rapido:
 composer version:bump
 ```
 
+### Build version automatica per PR
+
+Quando una Pull Request viene aperta o aggiornata, la pipeline genera automaticamente una **build version** nel formato:
+
+```text
+<VERSION>-pr<numero_pr>
+```
+
+Esempio:
+
+```text
+1.1.04-pr123
+```
+
+Questo valore è solo per build di PR e **non** sostituisce la versione ufficiale di release presente nel file `VERSION`.
+
 
 ## Area superadmin home
 
@@ -125,4 +141,3 @@ La cartella `samples/` contiene solo esempi manuali e non viene usata di default
 - `samples/`: esempi opzionali per test manuali rapidi.
 - `tests/smoke.php`: smoke test CLI (usa `storage/` di default).
 - `tests/version.php`: verifica formato e presenza versione applicativa.
-
