@@ -75,9 +75,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <a class="button" href="index.php">Home</a>
         <a class="button secondary" href="controllo.php">Apri Ricerca Cliente</a>
         <a class="button ghost" href="scadenzario.php">Registrazione pagamenti</a>
-        <a class="button ghost" href="?superadmin=1">Area superadmin home</a>
         <span class="pill">Versione v<?= htmlspecialchars($appVersion) ?></span>
-        <?php if (!empty($_SESSION['is_superadmin'])): ?><a class="button ghost" href="?action=superadmin_logout">Logout superadmin</a><?php endif; ?>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
@@ -143,4 +141,3 @@ require __DIR__ . '/dashboard-bootstrap.php';
 </div>
 </body>
 </html>
-
