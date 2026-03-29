@@ -8,10 +8,14 @@ use RuntimeException;
 
 final class GoogleCalendarService
 {
+    private readonly string $sentIndexPath;
+
     public function __construct(
         private readonly string $configPath,
         private readonly string $tokenPath,
+        ?string $sentIndexPath = null,
     ) {
+        $this->sentIndexPath = $sentIndexPath ?? dirname($this->tokenPath) . '/google-sent-events.json';
     }
 
     public function isConfigured(): bool
@@ -65,9 +69,15 @@ final class GoogleCalendarService
     public function pushEvents(array $dues, string $calendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com'): int
     {
         $token = $this->getValidToken();
+        $sentIndex = $this->loadSentIndex();
         $inserted = 0;
 
         foreach ($dues as $due) {
+            $dueKey = $this->buildSentDueKey($due, $calendarId);
+            if (isset($sentIndex[$dueKey])) {
+                continue;
+            }
+
             $payload = [
                 'summary' => $due->toCalendarSummary(),
                 'description' => $due->toCalendarDescription(),
@@ -80,10 +90,45 @@ final class GoogleCalendarService
                 rawurlencode($calendarId)
             );
             $this->postJson($url, $payload, $token['access_token']);
+            $sentIndex[$dueKey] = [
+                'calendar_id' => $calendarId,
+                'invoice_number' => $due->invoiceNumber,
+                'due_date' => $due->dueDate,
+                'sent_at' => time(),
+            ];
             $inserted++;
         }
 
+        $this->saveSentIndex($sentIndex);
+
         return $inserted;
+    }
+
+    /** @return array<string,array<string,mixed>> */
+    private function loadSentIndex(): array
+    {
+        if (!is_file($this->sentIndexPath)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($this->sentIndexPath), true);
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    /** @param array<string,array<string,mixed>> $sentIndex */
+    private function saveSentIndex(array $sentIndex): void
+    {
+        $directory = dirname($this->sentIndexPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0775, true);
+        }
+
+        file_put_contents($this->sentIndexPath, json_encode($sentIndex, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function buildSentDueKey(InvoiceDue $due, string $calendarId): string
+    {
+        return sha1($calendarId . '|' . trim($due->invoiceNumber) . '|' . trim($due->dueDate));
     }
 
     private function getValidToken(): array
