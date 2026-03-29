@@ -167,3 +167,4 @@ final class GoogleCalendarService
         return is_array($decoded) ? $decoded : [];
     }
 }
+

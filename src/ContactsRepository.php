@@ -62,3 +62,4 @@ final class ContactsRepository
         return strtoupper(trim((string) $value));
     }
 }
+
