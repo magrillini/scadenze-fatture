@@ -48,7 +48,17 @@ Apri poi `http://127.0.0.1:8080`.
 
 ## Versione applicazione
 
-La versione attiva è nel file `VERSION` (es. `1.1.0`) ed è mostrata anche in interfaccia.
+La versione attiva è nel file `VERSION` (es. `1.1.01`) ed è mostrata anche in interfaccia.
+
+Regola incremento per ogni PR:
+- incremento del patch a 2 cifre (`01` … `99`);
+- dopo `99`, incremento del minor e reset patch a `00` (es. `1.1.99` -> `1.2.00`).
+
+Comando rapido:
+
+```bash
+composer version:bump
+```
 
 
 ## Area superadmin home
@@ -88,6 +98,12 @@ La dashboard ora permette di:
 
 I dati operativi vengono salvati in `storage/payment-registry.json`.
 
+Cartelle operative usate dall'app:
+- `storage/` (stato applicativo e token Google)
+- `storage/xml/` (fatture XML da elaborare)
+
+La cartella `samples/` contiene solo esempi manuali e non viene usata di default dalla dashboard.
+
 ## Google Calendar API
 
 1. Crea credenziali OAuth 2.0 in Google Cloud.
@@ -105,6 +121,8 @@ I dati operativi vengono salvati in `storage/payment-registry.json`.
 - `src/ContactsRepository.php`: import rubrica clienti da CSV.
 - `src/DashboardService.php`: aggregazioni per lo scadenzario.
 - `src/GoogleCalendarService.php`: integrazione API Google Calendar.
-- `samples/`: esempi pronti per test rapidi.
+- `storage/` e `storage/xml/`: percorsi operativi predefiniti usati da dashboard e test smoke.
+- `samples/`: esempi opzionali per test manuali rapidi.
 - `tests/smoke.php`: smoke test CLI (usa `storage/` di default).
 - `tests/version.php`: verifica formato e presenza versione applicativa.
+
