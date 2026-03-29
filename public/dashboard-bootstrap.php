@@ -25,6 +25,7 @@ if (!is_dir($defaultXmlDirectory)) {
 
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $versionFilePath = dirname(__DIR__) . '/VERSION';
+$buildVersionFilePath = dirname(__DIR__) . '/build-version.txt';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 $defaultCalendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com';
 
@@ -44,6 +45,30 @@ if ($versionContent !== false) {
     $parsedVersion = trim($versionContent);
     if ($parsedVersion !== '') {
         $appVersion = $parsedVersion;
+    }
+}
+
+$envBuildVersion = trim((string) ($_SERVER['APP_BUILD_VERSION'] ?? getenv('APP_BUILD_VERSION') ?: ''));
+if ($envBuildVersion !== '') {
+    $appVersion = $envBuildVersion;
+} else {
+    $buildVersionContent = @file_get_contents($buildVersionFilePath);
+    if ($buildVersionContent !== false) {
+        $parsedBuildVersion = trim($buildVersionContent);
+        if ($parsedBuildVersion !== '') {
+            $appVersion = $parsedBuildVersion;
+        }
+    } else {
+        $prNumber = trim((string) ($_SERVER['PR_NUMBER'] ?? getenv('PR_NUMBER') ?: ''));
+        if ($prNumber === '') {
+            $githubRef = (string) ($_SERVER['GITHUB_REF'] ?? getenv('GITHUB_REF') ?: '');
+            if (preg_match('#refs/pull/(\d+)/#', $githubRef, $matches) === 1) {
+                $prNumber = (string) $matches[1];
+            }
+        }
+        if ($prNumber !== '' && preg_match('/^\d+$/', $prNumber)) {
+            $appVersion .= '-pr' . $prNumber;
+        }
     }
 }
 $dues = [];
