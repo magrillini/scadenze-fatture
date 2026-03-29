@@ -20,3 +20,4 @@ if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
 }
 
 echo json_encode(['version' => $version], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+

@@ -62,3 +62,4 @@ final class PaymentRegistryRepository
         $this->save($data);
     }
 }
+

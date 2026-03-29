@@ -33,3 +33,4 @@ echo json_encode([
     'first_due_client' => $summary['dues'][0]->clientName ?? null,
     'outstanding_amount' => $summary['outstanding_amount'],
 ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+

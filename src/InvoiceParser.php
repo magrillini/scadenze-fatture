@@ -143,3 +143,4 @@ final class InvoiceParser
         return $value !== '' ? $value : $default;
     }
 }
+

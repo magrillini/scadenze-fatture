@@ -108,3 +108,4 @@ I dati operativi vengono salvati in `storage/payment-registry.json`.
 - `samples/`: esempi pronti per test rapidi.
 - `tests/smoke.php`: smoke test CLI (usa `storage/` di default).
 - `tests/version.php`: verifica formato e presenza versione applicativa.
+

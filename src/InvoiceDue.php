@@ -104,3 +104,4 @@ final class InvoiceDue
         return implode("\n", $lines);
     }
 }
+
