@@ -236,3 +236,4 @@ final class DashboardService
         return 'fallback:' . sha1(implode('|', [$due->invoiceNumber, $due->invoiceDate]));
     }
 }
+
