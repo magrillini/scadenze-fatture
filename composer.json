@@ -9,6 +9,9 @@
     "psr-4": {
       "ScadenzeFatture\\": "src/"
     }
+  },
+  "scripts": {
+    "version:bump": "php scripts/bump-version.php"
   }
 }
 

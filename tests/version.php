@@ -14,7 +14,7 @@ if ($version === '') {
     exit(1);
 }
 
-if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+if (!preg_match('/^\d+\.\d+\.\d{2}$/', $version)) {
     fwrite(STDERR, "Formato VERSION non valido: {$version}\n");
     exit(1);
 }

@@ -48,7 +48,17 @@ Apri poi `http://127.0.0.1:8080`.
 
 ## Versione applicazione
 
-La versione attiva è nel file `VERSION` (es. `1.1.0`) ed è mostrata anche in interfaccia.
+La versione attiva è nel file `VERSION` (es. `1.1.01`) ed è mostrata anche in interfaccia.
+
+Regola incremento per ogni PR:
+- incremento del patch a 2 cifre (`01` … `99`);
+- dopo `99`, incremento del minor e reset patch a `00` (es. `1.1.99` -> `1.2.00`).
+
+Comando rapido:
+
+```bash
+composer version:bump
+```
 
 
 ## Area superadmin home
