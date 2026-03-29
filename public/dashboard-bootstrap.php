@@ -26,10 +26,11 @@ if (!is_dir($defaultXmlDirectory)) {
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $versionFilePath = dirname(__DIR__) . '/VERSION';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
+$defaultCalendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com';
 
 $xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? $defaultXmlDirectory);
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/storage/contatti-clienti.csv');
-$calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
+$calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? $defaultCalendarId);
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
 $clientSearch = trim($_POST['client_search'] ?? $_GET['client_search'] ?? '');
 $amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');

@@ -62,7 +62,7 @@ final class GoogleCalendarService
     }
 
     /** @param InvoiceDue[] $dues */
-    public function pushEvents(array $dues, string $calendarId = 'primary'): int
+    public function pushEvents(array $dues, string $calendarId = '2861717ef5ab4f01829950ccbe6588e58314a7add509a4841a696e311fa45c8f@group.calendar.google.com'): int
     {
         $token = $this->getValidToken();
         $inserted = 0;
