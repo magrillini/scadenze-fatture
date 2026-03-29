@@ -58,6 +58,30 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <p class="muted">Registrazione pagamenti, invio al legale e modifica delle rate.</p>
     </section>
 
+
+    <section class="card">
+        <h2>Google Calendar</h2>
+        <p class="muted">Collega l'account Google e invia tutte le scadenze correnti del report al calendario selezionato.</p>
+        <form method="post" class="search-form-grid">
+            <div>
+                <label for="calendar_id">Google Calendar ID</label>
+                <input id="calendar_id" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>" placeholder="primary">
+            </div>
+            <div>
+                <input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>">
+                <input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>">
+                <input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>">
+                <input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>">
+                <input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>">
+                <input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>">
+                <p style="display:flex;gap:12px;flex-wrap:wrap;margin:0;">
+                    <a class="button secondary" href="?action=connect_google&amp;xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Collega Google Calendar</a>
+                    <button type="submit" name="action" value="push_google">Invia scadenze a Google</button>
+                </p>
+            </div>
+        </form>
+    </section>
+
     <section class="card">
         <div class="table-tools">
             <div>
@@ -79,8 +103,28 @@ require __DIR__ . '/dashboard-bootstrap.php';
                 <a class="button ghost" href="?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>">Reset filtri</a>
             </div>
         </form>
-        <table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Contatti</th><th>Fattura</th><th>Rata</th><th>Pagamento</th><th>Importo</th><th>Pagamenti / Avvocato</th><th>Numero rate</th></tr></thead><tbody><?php foreach ($filteredDues as $due): $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; ?><tr><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td><td><?= htmlspecialchars($due->clientName) ?><br><span class="muted"><?= htmlspecialchars($due->clientVat ?? '-') ?></span></td><td><?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?></td><td><?= htmlspecialchars($due->invoiceNumber) ?><br><span class="muted">Data: <?= htmlspecialchars($due->invoiceDate) ?></span></td><td><?= $due->installmentNumber ?>/<?= $due->installmentCount ?></td><td><span class="pill"><?= htmlspecialchars($due->paymentTypeLabel) ?></span></td><td class="amount"><?= euro($due->amount) ?></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_due_status"><input type="hidden" name="due_id" value="<?= htmlspecialchars((string) $due->dueId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><label><input type="checkbox" name="pagamenti" value="1" <?= $due->paid ? 'checked' : '' ?>> Pagata</label><label><input type="checkbox" name="avvocato" value="1" <?= $due->lawyer ? 'checked' : '' ?>> Avvocato</label><button type="submit">Salva</button><div class="muted <?= $due->lawyer ? 'status-legal' : ($due->paid ? 'status-paid' : 'status-open') ?>"><?= $due->lawyer ? 'Pratica al legale' : ($due->paid ? 'Incassata' : 'Aperta') ?></div></form></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_installments"><input type="hidden" name="invoice_id" value="<?= htmlspecialchars((string) $due->invoiceId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><input type="number" min="1" max="24" name="numero_rate" value="<?= (int) $due->installmentCount ?>"><button type="submit">Aggiorna rate</button></form></td></tr><?php endforeach; ?><?php if ($filteredDues === []): ?><tr><td colspan="9" class="muted">Nessuna fattura trovata con i filtri selezionati.</td></tr><?php endif; ?></tbody></table>
+        <table><thead><tr><th>Scadenza</th><th>Cliente</th><th>Contatti</th><th>Fattura</th><th>Rata</th><th>Pagamento</th><th>Importo</th><th>Pagamenti / Avvocato</th><th>Numero rate</th></tr></thead><tbody><?php foreach ($filteredDues as $due): $dueDateClass = isDueBeforeInvoiceDate($due->dueDate, $due->invoiceDate) ? 'due-date-anomaly' : ''; $rowId = 'due-row-' . preg_replace('/[^A-Za-z0-9_-]/', '-', (string) $due->dueId); ?><tr id="<?= htmlspecialchars($rowId) ?>"><td class="<?= $dueDateClass ?>"><?= htmlspecialchars($due->dueDate) ?></td><td><?= htmlspecialchars($due->clientName) ?><br><span class="muted"><?= htmlspecialchars($due->clientVat ?? '-') ?></span></td><td><?= htmlspecialchars(($due->phone ?? '-') . ' / ' . ($due->email ?? '-')) ?></td><td><?= htmlspecialchars($due->invoiceNumber) ?><br><span class="muted">Data: <?= htmlspecialchars($due->invoiceDate) ?></span></td><td><?= $due->installmentNumber ?>/<?= $due->installmentCount ?></td><td><span class="pill"><?= htmlspecialchars($due->paymentTypeLabel) ?></span></td><td class="amount"><?= euro($due->amount) ?></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_due_status"><input type="hidden" name="focus_row_id" value="<?= htmlspecialchars($rowId) ?>"><input type="hidden" name="due_id" value="<?= htmlspecialchars((string) $due->dueId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><label><input type="checkbox" name="pagamenti" value="1" <?= $due->paid ? 'checked' : '' ?>> Pagata</label><label><input type="checkbox" name="avvocato" value="1" <?= $due->lawyer ? 'checked' : '' ?>> Avvocato</label><button type="submit">Salva</button><div class="muted <?= $due->lawyer ? 'status-legal' : ($due->paid ? 'status-paid' : 'status-open') ?>"><?= $due->lawyer ? 'Pratica al legale' : ($due->paid ? 'Incassata' : 'Aperta') ?></div></form></td><td><form method="post" class="compact-form"><input type="hidden" name="action" value="save_installments"><input type="hidden" name="focus_row_id" value="<?= htmlspecialchars($rowId) ?>"><input type="hidden" name="invoice_id" value="<?= htmlspecialchars((string) $due->invoiceId) ?>"><input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>"><input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>"><input type="hidden" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>"><input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>"><input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>"><input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>"><input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>"><input type="number" min="1" max="24" name="numero_rate" value="<?= (int) $due->installmentCount ?>"><button type="submit">Aggiorna rate</button></form></td></tr><?php endforeach; ?><?php if ($filteredDues === []): ?><tr><td colspan="9" class="muted">Nessuna fattura trovata con i filtri selezionati.</td></tr><?php endif; ?></tbody></table>
     </section>
 </div>
+<?php if ($focusRowId !== null && $focusRowId !== ''): ?>
+<script>
+    window.addEventListener('load', function () {
+        var focusId = <?= json_encode($focusRowId, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
+        var row = document.getElementById(focusId);
+        if (!row) {
+            return;
+        }
+
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.transition = 'background-color 1.5s ease';
+        row.style.backgroundColor = '#fef9c3';
+        setTimeout(function () {
+            row.style.backgroundColor = '';
+        }, 1400);
+    });
+</script>
+<?php endif; ?>
+
 </body>
 </html>
+

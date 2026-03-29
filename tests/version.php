@@ -14,9 +14,10 @@ if ($version === '') {
     exit(1);
 }
 
-if (!preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+if (!preg_match('/^\d+\.\d+\.\d{2}$/', $version)) {
     fwrite(STDERR, "Formato VERSION non valido: {$version}\n");
     exit(1);
 }
 
 echo json_encode(['version' => $version], JSON_UNESCAPED_SLASHES) . PHP_EOL;
+

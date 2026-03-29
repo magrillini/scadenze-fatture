@@ -13,11 +13,21 @@ require dirname(__DIR__) . '/src/bootstrap.php';
 session_start();
 
 $storageDirectory = dirname(__DIR__) . '/storage';
+$defaultXmlDirectory = $storageDirectory . '/xml';
+
+if (!is_dir($storageDirectory)) {
+    mkdir($storageDirectory, 0775, true);
+}
+
+if (!is_dir($defaultXmlDirectory)) {
+    mkdir($defaultXmlDirectory, 0775, true);
+}
+
 $paymentRegistryPath = $storageDirectory . '/payment-registry.json';
 $versionFilePath = dirname(__DIR__) . '/VERSION';
 $currentScript = basename((string) ($_SERVER['PHP_SELF'] ?? 'index.php'));
 
-$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? dirname(__DIR__) . '/storage/xml');
+$xmlDirectory = trim($_POST['xml_directory'] ?? $_GET['xml_directory'] ?? $defaultXmlDirectory);
 $contactsPath = trim($_POST['contacts_path'] ?? $_GET['contacts_path'] ?? dirname(__DIR__) . '/storage/contatti-clienti.csv');
 $calendarId = trim($_POST['calendar_id'] ?? $_GET['calendar_id'] ?? 'primary');
 $chartGroupBy = trim($_POST['chart_group_by'] ?? $_GET['chart_group_by'] ?? 'cliente');
@@ -26,6 +36,7 @@ $amountMin = trim($_POST['amount_min'] ?? $_GET['amount_min'] ?? '');
 $amountMax = trim($_POST['amount_max'] ?? $_GET['amount_max'] ?? '');
 $message = null;
 $error = null;
+$focusRowId = null;
 $appVersion = 'dev';
 $versionContent = @file_get_contents($versionFilePath);
 if ($versionContent !== false) {
@@ -75,6 +86,7 @@ try {
             isset($_POST['avvocato'])
         );
         $message = 'Stato pagamento aggiornato.';
+        $focusRowId = trim((string) ($_POST['focus_row_id'] ?? ''));
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_installments') {
@@ -83,6 +95,7 @@ try {
             max(1, (int) ($_POST['numero_rate'] ?? 1))
         );
         $message = 'Numero rate aggiornato con successo.';
+        $focusRowId = trim((string) ($_POST['focus_row_id'] ?? ''));
     }
 
     $contacts = $contactsRepository->loadFromCsv($contactsPath);
@@ -180,3 +193,4 @@ function buildPieGradient(array $segments): string
 
     return 'conic-gradient(' . implode(', ', $parts) . ')';
 }
+
