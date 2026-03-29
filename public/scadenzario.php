@@ -58,6 +58,30 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <p class="muted">Registrazione pagamenti, invio al legale e modifica delle rate.</p>
     </section>
 
+
+    <section class="card">
+        <h2>Google Calendar</h2>
+        <p class="muted">Collega l'account Google e invia tutte le scadenze correnti del report al calendario selezionato.</p>
+        <form method="post" class="search-form-grid">
+            <div>
+                <label for="calendar_id">Google Calendar ID</label>
+                <input id="calendar_id" name="calendar_id" value="<?= htmlspecialchars($calendarId) ?>" placeholder="primary">
+            </div>
+            <div>
+                <input type="hidden" name="xml_directory" value="<?= htmlspecialchars($xmlDirectory) ?>">
+                <input type="hidden" name="contacts_path" value="<?= htmlspecialchars($contactsPath) ?>">
+                <input type="hidden" name="chart_group_by" value="<?= htmlspecialchars($chartGroupBy) ?>">
+                <input type="hidden" name="client_search" value="<?= htmlspecialchars($clientSearch) ?>">
+                <input type="hidden" name="amount_min" value="<?= htmlspecialchars($amountMin) ?>">
+                <input type="hidden" name="amount_max" value="<?= htmlspecialchars($amountMax) ?>">
+                <p style="display:flex;gap:12px;flex-wrap:wrap;margin:0;">
+                    <a class="button secondary" href="?action=connect_google&amp;xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Collega Google Calendar</a>
+                    <button type="submit" name="action" value="push_google">Invia scadenze a Google</button>
+                </p>
+            </div>
+        </form>
+    </section>
+
     <section class="card">
         <div class="table-tools">
             <div>
