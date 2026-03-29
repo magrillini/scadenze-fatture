@@ -71,19 +71,40 @@ final class DashboardService
                     'client' => $due->clientName,
                     'cf' => $due->clientVat ?: '-',
                     'turnover' => 0.0,
+                    'turnover_current_year' => 0.0,
                     'collected' => 0.0,
                     'outstanding' => 0.0,
                     'legal' => 0.0,
                     'overdue_unpaid' => 0,
+                    'overdue_unpaid_amount' => 0.0,
+                    'future_amount' => 0.0,
+                    'due_soon_amount' => 0.0,
+                    'paid_amount' => 0.0,
                 ];
             }
 
             $customerStats[$customerKey]['turnover'] += $due->amount;
+            if (str_starts_with($due->invoiceDate, date('Y') . '-')) {
+                $customerStats[$customerKey]['turnover_current_year'] += $due->amount;
+            }
             $customerStats[$customerKey]['collected'] += $due->paid ? $due->amount : 0.0;
             $customerStats[$customerKey]['outstanding'] += $due->paid ? 0.0 : $due->amount;
             $customerStats[$customerKey]['legal'] += $due->lawyer ? $due->amount : 0.0;
             if (!$due->paid && $due->dueDate < $today) {
                 $customerStats[$customerKey]['overdue_unpaid']++;
+            }
+
+            if ($due->paid) {
+                $customerStats[$customerKey]['paid_amount'] += $due->amount;
+            } else {
+                $agingKey = $this->resolveAgingBucket($due, $today);
+                if ($agingKey === 'overdue_unpaid') {
+                    $customerStats[$customerKey]['overdue_unpaid_amount'] += $due->amount;
+                } elseif ($agingKey === 'due_soon') {
+                    $customerStats[$customerKey]['due_soon_amount'] += $due->amount;
+                } else {
+                    $customerStats[$customerKey]['future_amount'] += $due->amount;
+                }
             }
 
             $agingKey = $this->resolveAgingBucket($due, $today);
@@ -236,4 +257,3 @@ final class DashboardService
         return 'fallback:' . sha1(implode('|', [$due->invoiceNumber, $due->invoiceDate]));
     }
 }
-
