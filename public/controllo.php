@@ -25,6 +25,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
         table { width: 100%; border-collapse: collapse; margin-top: 14px; }
         th, td { padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: left; vertical-align: top; }
         .pill { background: #dbeafe; color: #1d4ed8; padding: 4px 8px; border-radius: 999px; font-size: 12px; }
+        .pill.version-tag { color: #7c2d12; background: #ffedd5; font-weight: 700; }
+        .pill.readme-tag { color: #0f766e; background: #ccfbf1; text-decoration: none; font-weight: 700; }
         .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
         .success { background: #dcfce7; color: #166534; }
         .error { background: #fee2e2; color: #991b1b; }
@@ -76,7 +78,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
             <a class="button secondary" href="controllo.php">Ricerca Cliente</a>
             <a class="button ghost" href="scadenzario.php?xml_directory=<?= urlencode($xmlDirectory) ?>&amp;contacts_path=<?= urlencode($contactsPath) ?>&amp;calendar_id=<?= urlencode($calendarId) ?>&amp;chart_group_by=<?= urlencode($chartGroupBy) ?>&amp;client_search=<?= urlencode($clientSearch) ?>&amp;amount_min=<?= urlencode($amountMin) ?>&amp;amount_max=<?= urlencode($amountMax) ?>">Registrazione pagamenti</a>
         </div>
-        <span class="pill">Monitoraggi dettagliati e filtri operativi · v<?= htmlspecialchars($appVersion) ?></span>
+        <span class="pill version-tag">Monitoraggi dettagliati e filtri operativi · v<?= htmlspecialchars($appVersion) ?></span>
+        <a class="pill readme-tag" href="../README.md" target="_blank" rel="noopener">README aggiornato</a>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
