@@ -78,7 +78,7 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <a class="button secondary" href="controllo.php">Apri Ricerca Cliente</a>
         <a class="button ghost" href="scadenzario.php">Registrazione pagamenti</a>
         <span class="pill version-tag">Versione v<?= htmlspecialchars($appVersion) ?></span>
-        <a class="pill readme-tag" href="../README.md" target="_blank" rel="noopener">README aggiornato</a>
+        <a class="pill readme-tag" href="readme.php">README aggiornato</a>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
