@@ -24,6 +24,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
         .hero-badges, .page-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
         .hero-badge, .pill { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18); border-radius: 999px; padding: 8px 12px; font-size: 13px; }
         .pill { background: #dbeafe; border-color: transparent; color: #1d4ed8; }
+        .pill.version-tag { color: #7c2d12; background: #ffedd5; font-weight: 700; }
+        .pill.readme-tag { color: #0f766e; background: #ccfbf1; text-decoration: none; font-weight: 700; }
         label { display: block; font-weight: 700; margin-bottom: 6px; }
         input, textarea, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font: inherit; }
         textarea { min-height: 88px; resize: vertical; }
@@ -75,7 +77,8 @@ require __DIR__ . '/dashboard-bootstrap.php';
         <a class="button" href="index.php">Home</a>
         <a class="button secondary" href="controllo.php">Apri Ricerca Cliente</a>
         <a class="button ghost" href="scadenzario.php">Registrazione pagamenti</a>
-        <span class="pill">Versione v<?= htmlspecialchars($appVersion) ?></span>
+        <span class="pill version-tag">Versione v<?= htmlspecialchars($appVersion) ?></span>
+        <a class="pill readme-tag" href="../README.md" target="_blank" rel="noopener">README aggiornato</a>
     </div>
 
     <?php if ($message): ?><div class="alert success"><?= htmlspecialchars($message) ?></div><?php endif; ?>
