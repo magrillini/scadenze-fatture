@@ -49,7 +49,7 @@ Apri poi `http://127.0.0.1:8080`.
 ## Versione applicazione
 
 La versione attiva è nel file `VERSION` (es. `1.1.01`) ed è mostrata anche in interfaccia.
-Nelle pagine principali (`index.php` e `controllo.php`) è stato aggiunto anche un tag dedicato **README aggiornato** per aprire rapidamente questo file.
+Nelle pagine principali (`index.php` e `controllo.php`) è stato aggiunto anche un tag dedicato **README aggiornato** che apre la pagina `readme.php` per leggere rapidamente questo file.
 
 Regola incremento per ogni PR:
 - incremento del patch a 2 cifre (`01` … `99`);
